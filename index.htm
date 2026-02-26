@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Bezier Experiments</title>
+<style>
+body {
+	background: #eeeeee;
+}
+.playground {
+	display: inline-block;
+	position: relative;
+	border: 1px solid black;
+	background: white;
+
+	&.draw {
+		touch-action: pinch-zoom;
+    user-select: none;
+	}
+
+	& svg {
+		display: block;
+
+		& path {
+			fill: none;
+			stroke-linecap: round;
+			stroke-linejoin: round;
+			vector-effect: non-scaling-stroke;
+		}
+
+		.ctl {
+			stroke: #cccccc;
+		}
+
+		.curve {
+			fill: #00000011;
+			stroke: black;
+		}
+
+		.split {
+			stroke: #ff0000;
+			stroke-width: 5;
+		}
+
+		.live {
+			stroke: #ff0000;
+		}
+
+		.done {
+			stroke: #000000;
+
+			&:nth-child(even) {
+				stroke-width: 2;
+			}
+
+			&.n2 {
+				stroke: #cccc00;
+			}
+
+			&.n3 {
+				stroke: #00cc00;
+			}
+
+			&.n4 {
+				stroke: #cc00cc;
+			}
+		}
+	}
+
+	.ctl {
+		position: absolute;
+		width: 8px;
+		height: 8px;
+		box-sizing: border-box;
+		border: 1px solid black;
+		border-radius: 100%;
+		margin: -4px;
+	}
+	.prev {
+		background: #CC0000;
+	}
+	.end {
+		background: #0000CC;
+	}
+	.mid {
+		background: #00CC00;
+	}
+}
+</style>
+<script type="module">
+class Matrix {
+	constructor(values, m, n) {
+		this.values = values; // row major
+		this.m = m; // rows
+		this.n = n; // columns
+	}
+}
+
+function matPrint(mat) {
+	if (!mat) {
+		return '(null)';
+	}
+	const { values, m, n } = mat;
+	let r = [];
+	for (let i = 0; i < m; ++i) {
+		const row = [];
+		for (let j = 0; j < n; ++j) {
+			row.push(values[i * n + j].toFixed(3).padStart(8, ' '));
+		}
+		r.push(row.join(' '));
+	}
+	return `[ ${r.join('\n  ')} ] (${m}x${n})`;
+}
+
+function matToPtArray(mat) {
+	const { values, m, n } = mat;
+	if (n !== 2) {
+		throw new Error(`invalid matrix dimension for points (${m} x ${n})`);
+	}
+	const r = [];
+	for (let i = 0; i < m; ++i) {
+		r.push({ x: values[i * 2], y: values[i * 2 + 1] });
+	}
+	return r;
+}
+
+function ptArrayToMat(pts) {
+	const v = [];
+	for (const pt of pts) {
+		v.push(pt.x, pt.y);
+	}
+	return new Matrix(v, pts.length, 2);
+}
+
+function arrayToMat(values, dim = 1) {
+	if (values.length % dim) {
+		throw new Error('invalid array length for matrix');
+	}
+	return new Matrix(values, values.length / dim, dim);
+}
+
+function array2DToMat(values) {
+	const expanded = values.flat();
+	return arrayToMat(expanded, (expanded.length / values.length)|0);
+}
+
+function fnToMat(values, fn) {
+	const expanded = values.flatMap(fn);
+	return arrayToMat(expanded, (expanded.length / values.length)|0);
+}
+
+function matReshape(mat, n = 1) {
+	const total = mat.m * mat.n;
+	if (total % n) {
+		throw new Error('invalid matrix reshaping');
+	}
+	return new Matrix(mat.values, total / n, n);
+}
+
+function matMul(a, b) {
+	const m = a.m;
+	const n = b.n;
+	const s = a.n;
+	if (b.m !== s) {
+		throw new Error(`invalid matrix multiplication (${a.m} x ${a.n}) * (${b.m} x ${b.n})`);
+	}
+	const r = [];
+	for (let i = 0; i < m; ++i) {
+		for (let j = 0; j < n; ++j) {
+			let v = 0;
+			for (let k = 0; k < s; ++k) {
+				v += a.values[i * s + k] * b.values[k * n + j];
+			}
+			r.push(v);
+		}
+	}
+	return new Matrix(r, m, n);
+}
+
+const matScale = (mat, s) => new Matrix(mat.values.map((v) => v * s), mat.m, mat.n);
+
+function matMulATransposeB(aT, b) {
+	const m = aT.n;
+	const n = b.n;
+	const s = aT.m;
+	if (b.m !== s) {
+		throw new Error(`invalid matrix multiplication (${aT.n} x ${aT.m}) * (${b.m} x ${b.n})`);
+	}
+	const r = [];
+	for (let i = 0; i < m; ++i) {
+		for (let j = 0; j < n; ++j) {
+			let v = 0;
+			for (let k = 0; k < s; ++k) {
+				v += aT.values[k * m + i] * b.values[k * n + j];
+			}
+			r.push(v);
+		}
+	}
+	return new Matrix(r, m, n);
+}
+
+function matInv(mat) {
+	if (mat.m !== mat.n) {
+		throw new Error('matrix is not square');
+	}
+	switch (mat.m) {
+		case 1: {
+			const v00 = mat.values[0];
+			if (Math.abs(v00) < 1e-8) {
+				return null;
+			}
+			return new Matrix([1 / v00], 1, 1);
+		}
+		case 2: {
+			const [
+				v00, v01,
+				v10, v11,
+			] = mat.values;
+
+			const det = v00 * v11 - v10 * v01;
+			if (Math.abs(det) < 1e-8) {
+				return null;
+			}
+
+			const m = 1 / det;
+			return new Matrix([
+				v11 * m, -v10 * m,
+				-v01 * m, v00 * m,
+			], 2, 2);
+		}
+		case 3: {
+			// thanks, https://en.wikipedia.org/wiki/Inverse_matrix#Inversion_of_3_%C3%97_3_matrices
+
+			const [
+				v00, v01, v02,
+				v10, v11, v12,
+				v20, v21, v22,
+			] = mat.values;
+
+			const A = v22 * v11 - v12 * v21;
+			const B = v12 * v20 - v22 * v10;
+			const C = v21 * v10 - v11 * v20;
+
+			const det = (v00 * A + v01 * B + v02 * C);
+			if (Math.abs(det) < 1e-8) {
+				return null;
+			}
+
+			const m = 1 / det;
+			return new Matrix([
+				A * m,
+				(v02 * v21 - v22 * v01) * m,
+				(v12 * v01 - v02 * v11) * m,
+				B * m,
+				(v22 * v00 - v02 * v20) * m,
+				(v02 * v10 - v12 * v00) * m,
+				C * m,
+				(v01 * v20 - v21 * v00) * m,
+				(v11 * v00 - v01 * v10) * m,
+			], 3, 3);
+		}
+		case 4: {
+			// thanks, https://github.com/toji/gl-matrix/blob/accefb6ddf1897a0dc443bbc7664c90e67af6455/src/mat4.js#L293
+			// gl-matrix license: MIT
+
+			const [
+				v00, v01, v02, v03,
+				v10, v11, v12, v13,
+				v20, v21, v22, v23,
+				v30, v31, v32, v33,
+			] = mat.values;
+
+			const c0101 = v00 * v11 - v01 * v10;
+			const c0102 = v00 * v12 - v02 * v10;
+			const c0103 = v00 * v13 - v03 * v10;
+			const c0112 = v01 * v12 - v02 * v11;
+			const c0113 = v01 * v13 - v03 * v11;
+			const c0123 = v02 * v13 - v03 * v12;
+
+			const c2301 = v20 * v31 - v21 * v30;
+			const c2302 = v20 * v32 - v22 * v30;
+			const c2303 = v20 * v33 - v23 * v30;
+			const c2312 = v21 * v32 - v22 * v31;
+			const c2313 = v21 * v33 - v23 * v31;
+			const c2323 = v22 * v33 - v23 * v32;
+
+			const det = (
+				+ c0101 * c2323 - c0102 * c2313
+				+ c0103 * c2312 + c0112 * c2303
+				- c0113 * c2302 + c0123 * c2301
+			);
+			if (Math.abs(det) < 1e-8) {
+				return null;
+			}
+
+			const m = 1 / det;
+
+			return new Matrix([
+				(v11 * c2323 - v12 * c2313 + v13 * c2312) * m,
+				(v02 * c2313 - v01 * c2323 - v03 * c2312) * m,
+				(v31 * c0123 - v32 * c0113 + v33 * c0112) * m,
+				(v22 * c0113 - v21 * c0123 - v23 * c0112) * m,
+				(v12 * c2303 - v10 * c2323 - v13 * c2302) * m,
+				(v00 * c2323 - v02 * c2303 + v03 * c2302) * m,
+				(v32 * c0103 - v30 * c0123 - v33 * c0102) * m,
+				(v20 * c0123 - v22 * c0103 + v23 * c0102) * m,
+				(v10 * c2313 - v11 * c2303 + v13 * c2301) * m,
+				(v01 * c2303 - v00 * c2313 - v03 * c2301) * m,
+				(v30 * c0113 - v31 * c0103 + v33 * c0101) * m,
+				(v21 * c0103 - v20 * c0113 - v23 * c0101) * m,
+				(v11 * c2302 - v10 * c2312 - v12 * c2301) * m,
+				(v00 * c2312 - v01 * c2302 + v02 * c2301) * m,
+				(v31 * c0102 - v30 * c0112 - v32 * c0101) * m,
+				(v20 * c0112 - v21 * c0102 + v22 * c0101) * m,
+			], 4, 4);
+		}
+		default:
+			throw new Error('unsupported matrix size');
+	}
+}
+
+class Line {
+	constructor(p0, p1) {
+		this.p0 = p0;
+		this.p1 = p1;
+	}
+
+	static degree = 1;
+
+	translate(shift) {
+		return new Line(
+			ptAdd(this.p0, shift),
+			ptAdd(this.p1, shift),
+		);
+	}
+
+	at(t) {
+		return ptLerp(this.p0, this.p1, t);
+	}
+
+	derivative() {
+		return ptSub(this.p1, this.p0);
+	}
+
+	elevate() {
+		return new QuadraticBezier(
+			this.p0,
+			ptLerp(this.p0, this.p1, 0.5),
+			this.p1,
+		);
+	}
+
+	length() {
+		return ptDist(this.p1, this.p0);
+	}
+
+	toSVGPath(prefix = 'M', mode = 'L') {
+		return `${prefix}${ptSVG(this.p0)}${mode}${ptSVG(this.p1)}`;
+	}
+}
+
+class QuadraticBezier {
+	constructor(p0, c1, p2) {
+		this.p0 = p0;
+		this.c1 = c1;
+		this.p2 = p2;
+	}
+
+	static degree = 2;
+
+	translate(shift) {
+		return new QuadraticBezier(
+			ptAdd(this.p0, shift),
+			ptAdd(this.c1, shift),
+			ptAdd(this.p2, shift),
+		);
+	}
+
+	at(t) {
+		const T = 1 - t;
+		return ptMad(ptMad(this.p0, T, ptMul(this.c1, 2 * t)), T, ptMul(this.p2, t * t));
+	}
+
+	derivative() {
+		return new Line(
+			ptSub(this.c1, this.p0),
+			ptSub(this.p2, this.c1),
+		);
+	}
+
+	elevate() {
+		return new CubicBezier(
+			this.p0,
+			ptLerp(this.p0, this.c1, 2 / 3),
+			ptLerp(this.c1, this.p2, 1 / 3),
+			this.p2,
+		);
+	}
+
+	lengthEstimate(maxError = Number.POSITIVE_INFINITY, recursionLimit = 10) {
+		// thanks, Adaptive subdivision and the length and energy of Bézier curves [Jens Gravesen]
+
+		const chord = ptDist(this.p2, this.p0);
+		const polygon = (
+			ptDist(this.p0, this.c1) +
+			ptDist(this.c1, this.p2)
+		);
+
+		const err = (polygon - chord) * (2 / 3);
+		if (err > maxError && recursionLimit > 0) {
+			const [s0, s1] = this.bisect();
+			const se = maxError * 0.5;
+			const sr = recursionLimit - 1;
+			const l1 = s0.lengthEstimate(se, sr);
+			const l2 = s1.lengthEstimate(maxError - l1.maxError, sr);
+			return addEstimates(l1, l2);
+		}
+
+		return {
+			best: (2 * chord + polygon) * (1 / 3),
+			maxError: err,
+			divisions: 1,
+		};
+	}
+
+	split(splits, minRange = 1e-6) {
+		// thanks, https://en.wikipedia.org/wiki/De_Casteljau's_algorithm
+		let pp0 = this.p0;
+		let pc1 = this.c1;
+		const pEnd = this.p2;
+		let pt = 0;
+		const r = [];
+		for (const t of splits.filter((t) => t > 0 && t < 1).sort()) {
+			if (t <= pt + minRange) {
+				continue;
+			}
+			const st = (t - pt) / (1 - pt);
+			const i0 = ptLerp(pp0, pc1, st);
+			const i1 = ptLerp(pc1, pEnd, st);
+			const p = ptLerp(i0, i1, st);
+			r.push(new QuadraticBezier(pp0, i0, p));
+			pp0 = p;
+			pc1 = i1;
+			pt = t;
+		}
+		r.push(new QuadraticBezier(pp0, pc1, pEnd));
+		return r;
+	}
+
+	bisect(t = 0.5) {
+		// thanks, https://en.wikipedia.org/wiki/De_Casteljau's_algorithm
+		const i0 = ptLerp(this.p0, this.c1, t);
+		const i1 = ptLerp(this.c1, this.p2, t);
+		const p = ptLerp(i0, i1, t);
+		return [
+			new QuadraticBezier(this.p0, i0, p),
+			new QuadraticBezier(p, i1, this.p2),
+		];
+	}
+
+	toSVGPath(prefix = 'M', mode = 'Q') {
+		return `${prefix}${ptSVG(this.p0)}${mode}${ptSVG(this.c1)} ${ptSVG(this.p2)}`;
+	}
+}
+
+class CubicBezier {
+	constructor(p0, c1, c2, p3) {
+		this.p0 = p0;
+		this.c1 = c1;
+		this.c2 = c2;
+		this.p3 = p3;
+	}
+
+	static degree = 3;
+
+	translate(shift) {
+		return new CubicBezier(
+			ptAdd(this.p0, shift),
+			ptAdd(this.c1, shift),
+			ptAdd(this.c2, shift),
+			ptAdd(this.p3, shift),
+		);
+	}
+
+	normalise() {
+		const norm = getNormalisation(this.p0, this.p3);
+		if (!norm) {
+			return { scale2: 0, curve: null, fn: () => ({ x: 0, y: 0 }) }; // TODO
+		}
+		return {
+			...norm,
+			curve: new NormalisedCubicBezier(norm.fn(this.c1), norm.fn(this.c2)),
+		};
+	}
+
+	at(t) {
+		const T = 1 - t;
+		return ptMad(
+			ptMad(
+				this.p0,
+				T * T,
+				ptMad(
+					this.c1,
+					3 * t * T,
+					ptMul(this.c2, 3 * t * t),
+				),
+			),
+			T,
+			ptMul(this.p3, t * t * t),
+		);
+	}
+
+	derivative() {
+		return new QuadraticBezier(
+			ptMul(ptSub(this.c1, this.p0), 3),
+			ptMul(ptSub(this.c2, this.c1), 3),
+			ptMul(ptSub(this.p3, this.c2), 3),
+		);
+	}
+
+	lengthEstimate(maxError = Number.POSITIVE_INFINITY, recursionLimit = 10) {
+		// Algorithm from kurbo (https://raphlinus.github.io/curves/2018/12/28/bezier-arclength.html / https://github.com/linebender/kurbo/blob/8e05b2e15fce702673354cfd81b232d94bea6068/kurbo/src/cubicbez.rs#L628)
+		// Kurbo license: Apache-2.0 or MIT
+
+		const d01 = ptSub(this.c1, this.p0);
+		const d12 = ptSub(this.c2, this.c1);
+		const d23 = ptSub(this.p3, this.c2);
+		const chord = ptDist(this.p0, this.p3);
+		const polygon = ptLen(d01) + ptLen(d12) + ptLen(d23);
+		const lp_lc = polygon - chord;
+		const dd1 = ptSub(d12, d01);
+		const dd2 = ptSub(d23, d12);
+		// The following values are scaled to reduce operation count
+		const dm = ptMad(ptAdd(d01, d23), 0.5, d12); // 2 * first derivative at midpoint
+		const dm1 = ptAdd(dd2, dd1); // 2 * second derivative at midpoint
+		const dm2 = ptSub(dd2, dd1); // 2 * third derivative at midpoint
+
+		let est = 0;
+		for (const [wi, xi] of GAUSS_LEGENDRE_COEFFS_8_HALF) {
+			const d = ptMad(dm2, xi * xi * 0.5, dm);
+			est += wi * (
+				ptLen2(ptMad(dm2, xi, dm1)) / ptLen2(ptMad(dm1, xi, d)) +
+				ptLen2(ptMad(dm2, -xi, dm1)) / ptLen2(ptMad(dm1, -xi, d))
+			);
+		}
+		est *= est * est;
+		let coeffs = GAUSS_LEGENDRE_COEFFS_8_HALF;
+		let err = Math.min(est * 2.5e-6, 3e-2) * lp_lc;
+		if (err > maxError) {
+			coeffs = GAUSS_LEGENDRE_COEFFS_16_HALF;
+			err = Math.min(est * est * 1.5e-11, 9e-3) * lp_lc;
+			if (err > maxError) {
+				coeffs = GAUSS_LEGENDRE_COEFFS_24_HALF;
+				err = Math.min(est * est * est * 3.5e-16, 3.5e-3) * lp_lc;
+				if (err > maxError && recursionLimit > 0) {
+					const [s0, s1] = this.bisect();
+					const se = maxError * 0.5;
+					const sr = recursionLimit - 1;
+					const l1 = s0.lengthEstimate(se, sr);
+					const l2 = s1.lengthEstimate(maxError - l1.maxError, sr);
+					return addEstimates(l1, l2);
+				}
+			}
+		}
+
+		let l = 0;
+		for (const [wi, xi] of coeffs) {
+			const d = ptMad(dm2, xi * xi * 0.5, dm);
+			const s = ptMul(dm1, xi);
+			l += wi * (ptLen(ptAdd(d, s)) + ptDist(d, s));
+		}
+		return {
+			best: 0.75 * l,
+			maxError: err,
+			divisions: 1,
+		};
+	}
+
+	split(splits, minRange = 1e-6) {
+		// thanks, https://en.wikipedia.org/wiki/De_Casteljau's_algorithm
+		let pp0 = this.p0;
+		let pc1 = this.c1;
+		let pc2 = this.c2;
+		const pEnd = this.p3;
+		let pt = 0;
+		const r = [];
+		for (const t of splits.filter((t) => t > 0 && t < 1).sort()) {
+			if (t <= pt + minRange) {
+				continue;
+			}
+			const st = (t - pt) / (1 - pt);
+			const i0 = ptLerp(pp0, pc1, st);
+			const i1 = ptLerp(pc1, pc2, st);
+			const i2 = ptLerp(pc2, pEnd, st);
+			const j0 = ptLerp(i0, i1, st);
+			const j1 = ptLerp(i1, i2, st);
+			const p = ptLerp(j0, j1, st);
+			r.push(new CubicBezier(pp0, i0, j0, p));
+			pp0 = p;
+			pc1 = j1;
+			pc2 = i2;
+			pt = t;
+		}
+		r.push(new CubicBezier(pp0, pc1, pc2, pEnd));
+		return r;
+	}
+
+	bisect(t = 0.5) {
+		// thanks, https://en.wikipedia.org/wiki/De_Casteljau's_algorithm
+		const i0 = ptLerp(this.p0, this.c1, t);
+		const i1 = ptLerp(this.c1, this.c2, t);
+		const i2 = ptLerp(this.c2, this.p3, t);
+		const j0 = ptLerp(i0, i1, t);
+		const j1 = ptLerp(i1, i2, t);
+		const p = ptLerp(j0, j1, t);
+		return [
+			new CubicBezier(this.p0, i0, j0, p),
+			new CubicBezier(p, j1, i2, this.p3),
+		];
+	}
+
+	toSVGPath(prefix = 'M', mode = 'C') {
+		return `${prefix}${ptSVG(this.p0)}${mode}${ptSVG(this.c1)} ${ptSVG(this.c2)} ${ptSVG(this.p3)}`;
+	}
+}
+
+// Constants source: https://github.com/linebender/kurbo/blob/8e05b2e15fce702673354cfd81b232d94bea6068/kurbo/src/common.rs#L814
+// Kurbo license: Apache-2.0 or MIT
+const GAUSS_LEGENDRE_COEFFS_8_HALF = [
+	[0.3626837833783620, 0.1834346424956498],
+	[0.3137066458778873, 0.5255324099163290],
+	[0.2223810344533745, 0.7966664774136267],
+	[0.1012285362903763, 0.9602898564975363],
+];
+const GAUSS_LEGENDRE_COEFFS_16_HALF = [
+	[0.1894506104550685, 0.0950125098376374],
+	[0.1826034150449236, 0.2816035507792589],
+	[0.1691565193950025, 0.4580167776572274],
+	[0.1495959888165767, 0.6178762444026438],
+	[0.1246289712555339, 0.7554044083550030],
+	[0.0951585116824928, 0.8656312023878318],
+	[0.0622535239386479, 0.9445750230732326],
+	[0.0271524594117541, 0.9894009349916499],
+];
+const GAUSS_LEGENDRE_COEFFS_24_HALF = [
+	[0.1279381953467522, 0.0640568928626056],
+	[0.1258374563468283, 0.1911188674736163],
+	[0.1216704729278034, 0.3150426796961634],
+	[0.1155056680537256, 0.4337935076260451],
+	[0.1074442701159656, 0.5454214713888396],
+	[0.0976186521041139, 0.6480936519369755],
+	[0.0861901615319533, 0.7401241915785544],
+	[0.0733464814110803, 0.8200019859739029],
+	[0.0592985849154368, 0.8864155270044011],
+	[0.0442774388174198, 0.9382745520027328],
+	[0.0285313886289337, 0.9747285559713095],
+	[0.0123412297999872, 0.9951872199970213],
+];
+
+class NormalisedCubicBezier {
+	constructor(c1, c2) {
+		this.c1 = c1;
+		this.c2 = c2;
+	}
+
+	static degree = 3;
+
+	static p0 = { x: 0, y: 0 };
+	static p3 = { x: 1, y: 0 };
+
+	at(t) {
+		const T = 1 - t;
+		return ptMad(
+			ptMad(
+				this.c1,
+				T,
+				ptMul(this.c2, t),
+			),
+			3 * t * T,
+			ptMul(NormalisedCubicBezier.p3, t * t * t),
+		);
+	}
+
+	derivative() {
+		return new QuadraticBezier(
+			ptMul(this.c1, 3),
+			ptMul(ptSub(this.c2, this.c1), 3),
+			ptMul(ptSub(NormalisedCubicBezier.p3, this.c2), 3),
+		);
+	}
+
+	curve() {
+		// curve(t) = (dx/dt * d^2(y)/dt^2 - d^2(x)/dt^2 * dy/dt) / ((dx/dt)^2 + (dy/dt)^2)^(3/2)
+		const d1f = this.derivative();
+		const d2f = d1f.derivative();
+		return (t) => {
+			const d1 = d1f.at(t);
+			const d2 = d2f.at(t);
+			const len = ptLen(d1);
+			return ptCross(d1, d2) / (len * len * len);
+		};
+	}
+
+	inflectionTs() {
+		// thanks, https://pomax.github.io/bezierinfo/
+		// note: curve function is simplified by skipping denominator - this form only used for finding zeros
+		// [scaled] curve(t) = (3*s+2*c1y-c2y)*t^2 + (-3*s-c1y)*t + s
+		// s = c1x*c2y - c2x*c1y
+		const s = this.c1.x * this.c2.y - this.c1.y * this.c2.x;
+		return solveQuadratic(
+			3 * s + 2 * this.c1.y - this.c2.y,
+			-3 * s - this.c1.y,
+			s,
+		);
+	}
+
+	xTurningPointTs() {
+		// thanks, https://pomax.github.io/bezierinfo/
+		return solveQuadratic(
+			1 + 3 * (this.c1.x - this.c2.x),
+			2 * this.c2.x - 4 * this.c1.x,
+			this.c1.x,
+		);
+	}
+
+	yTurningPointTs() {
+		// thanks, https://pomax.github.io/bezierinfo/
+		return solveQuadratic(
+			3 * (this.c1.y - this.c2.y),
+			2 * this.c2.y - 4 * this.c1.y,
+			this.c1.y,
+		);
+	}
+
+	area() {
+		// thanks, https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html
+		return 0.15 * ((1 + this.c2.x) * this.c1.y + (2 - this.c1.x) * this.c2.y);
+	}
+
+	moment() {
+		// thanks, https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html
+		const x1 = this.c1.x;
+		const y1 = this.c1.y;
+		const x2 = 1 - this.c2.x;
+		const y2 = this.c2.y;
+		return (
+			+ 34 * y1
+			+ 50 * y2
+			+ 15 * (x1 * y1 - x2 * y2)
+			- 33 * y1 * x2
+			+ 9 * x1 * y2
+			+ 9 * (y1 * x2 + x1 * y2) * (x2 - x1)
+		) * (1 / 280);
+	}
+
+	bisect(t = 0.5) {
+		// thanks, https://en.wikipedia.org/wiki/De_Casteljau's_algorithm
+		const i0 = ptLerp(NormalisedCubicBezier.p0, this.c1, t);
+		const i1 = ptLerp(this.c1, this.c2, t);
+		const i2 = ptLerp(this.c2, NormalisedCubicBezier.p3, t);
+		const j0 = ptLerp(i0, i1, t);
+		const j1 = ptLerp(i1, i2, t);
+		const p = ptLerp(j0, j1, t);
+		return [
+			new CubicBezier(NormalisedCubicBezier.p0, i0, j0, p),
+			new CubicBezier(p, j1, i2, NormalisedCubicBezier.p3),
+		];
+	}
+
+	split(splits, minRange = 1e-6) {
+		return this.withEndpoints().split(splits, minRange);
+	}
+
+	withEndpoints() {
+		return new CubicBezier(
+			NormalisedCubicBezier.p0,
+			this.c1,
+			this.c2,
+			NormalisedCubicBezier.p3,
+		);
+	}
+}
+
+function pointTs(points) {
+	let distance = 0;
+	const distances = [0];
+	for (let i = 1; i < points.length; ++i) {
+		const pt0 = points[i - 1];
+		const pt1 = points[i];
+		distance += ptDist(pt0, pt1);
+		distances.push(distance);
+	}
+	const m = 1 / distance;
+	return distances.map((d) => d * m);
+}
+
+// P = points                                         [  n x dim]
+// T = expanded t-values for points (1, t, tt, ttt)   [  n x d+1]
+// M = term multipliers (depends on degree)           [d+1 x d+1]
+// C = constants for curve                            [d+1 x dim]
+
+// C = M^-1 * (trans(T)*T)^-1 * trans(T) * P
+
+function solve(P, T, Minv) {
+	const TTinv = matInv(matMulATransposeB(T, T));
+	if (!TTinv) {
+		return null;
+	}
+	const TTinvTP = matMul(TTinv, matMulATransposeB(T, P));
+	if (typeof Minv === 'number') {
+		return matScale(TTinvTP, Minv);
+	} else {
+		return matMul(Minv, TTinvTP);
+	}
+}
+
+function leastSquaresFitQuadratic(points) {
+	// thanks, https://pomax.github.io/bezierinfo/#curvefitting
+
+	if (points.length >= 3) {
+		const P = ptArrayToMat(points);
+		const T = fnToMat(pointTs(points), (t) => [1, t, t * t]);
+		const C = solve(P, T, QUADRATIC_M_INV);
+		if (C) {
+			return new QuadraticBezier(...matToPtArray(C));
+		}
+	}
+
+	if (points.length > 0) {
+		// if we reach this, the points must be colinear;
+		// draw a straight line from start to end
+		return new Line(points[0], points[points.length - 1]).elevate();
+	}
+
+	return null;
+}
+
+function leastSquaresFitCubic(points) {
+	// thanks, https://pomax.github.io/bezierinfo/#curvefitting
+
+	if (points.length >= 4) {
+		const P = ptArrayToMat(points);
+		const T = fnToMat(pointTs(points), (t) => {
+			const tt = t * t;
+			return [1, t, tt, tt * t];
+		});
+
+		const C = solve(P, T, CUBIC_M_INV);
+		if (C) {
+			return new CubicBezier(...matToPtArray(C));
+		}
+	}
+
+	return leastSquaresFitQuadratic(points)?.elevate();
+}
+
+function leastSquaresFitQuadraticFixEnds(points, prevControl = null, w0 = 1, w1 = 1) {
+	if (points.length === 0) {
+		return null;
+	}
+
+	const p0 = points[0];
+	const pN = points[points.length - 1];
+	if (points.length >= 3) {
+		const ts = pointTs(points);
+		const dN = ptSub(pN, p0);
+
+		if (prevControl && ptDist2(p0, prevControl)) {
+			const c1n = ptNorm(ptSub(p0, prevControl));
+			const TCurve = ptLen2(dN) ? ptDot(c1n, ptNorm(dN)) ** 2 : 1;
+			const adjustedPoints = [];
+			const Tv = [];
+			for (let i = 1; i < points.length - 1; ++i) {
+				const pt = points[i];
+				const p = ts[i];
+				const w = w0 + p * (w1 - w0);
+
+				// find appropriate t values if we assume the line begins
+				// with the same gradient as prevControl
+
+				// p = t*t*(1 - TCurve/2) + t*TCurve/2
+				// we assert that solveQuadratic gives the solution for [0 1] at index 0
+				const t = solveQuadratic(1 - TCurve * 0.5, TCurve * 0.5, -p)[0];
+
+				const tt = t * t;
+				adjustedPoints.push(ptMul(ptMad(dN, -tt, ptSub(pt, p0)), w));
+				Tv.push((t - tt) * w);
+			}
+			const P = ptArrayToMat(adjustedPoints);
+			const T = fnToMat(Tv, (t1) => [c1n.x * t1, c1n.y * t1]);
+			const C = solve(matReshape(P), matReshape(T), QUADRATIC_M_INV_FIXED_ENDS);
+			if (C) {
+				const [c1l] = C.values;
+				if (c1l > 0) {
+					return new QuadraticBezier(p0, ptMad(c1n, c1l, p0), pN);
+				}
+			}
+		}
+
+		const adjustedPoints = [];
+		const Tv = [];
+		for (let i = 1; i < points.length - 1; ++i) {
+			const pt = points[i];
+			const t = ts[i];
+			const w = w0 + t * (w1 - w0);
+			const tt = t * t;
+			adjustedPoints.push(ptMul(ptMad(dN, -tt, ptSub(pt, p0)), w));
+			Tv.push((t - tt) * w);
+		}
+		const P = ptArrayToMat(adjustedPoints);
+		const T = arrayToMat(Tv);
+		const C = solve(P, T, QUADRATIC_M_INV_FIXED_ENDS);
+		if (C) {
+			const [c1] = matToPtArray(C);
+			return new QuadraticBezier(p0, ptAdd(p0, c1), pN);
+		}
+	}
+
+	if (points.length >= 2 && prevControl && ptDist2(p0, prevControl)) {
+		const dN = ptSub(pN, p0);
+		const d = ptLen(pN);
+		const c1n = ptNorm(ptSub(p0, prevControl));
+		const TCurve = d ? Math.max(ptDot(c1n, ptMul(dN, 1 / d)), 0) : 1;
+		const m = 1 / 3; // bias curve towards start to reduce wobble (0.5 is unbiased)
+		return new QuadraticBezier(p0, ptMad(c1n, TCurve * d * m, p0), pN);
+	}
+
+	return new Line(p0, pN).elevate();
+}
+
+function leastSquaresFitCubicFixEnds(points, prevControl = null, w0 = 1, w1 = 1) {
+	if (points.length >= 4) {
+		const p0 = points[0];
+		const pN = points[points.length - 1];
+		const ts = pointTs(points);
+		const dN = ptSub(pN, p0);
+
+		if (prevControl && ptDist2(p0, prevControl)) {
+			const c1n = ptNorm(ptSub(p0, prevControl));
+			const TCurve = ptLen2(dN) ? ptDot(c1n, ptNorm(dN)) ** 2 : 1;
+			const adjustedPoints = [];
+			const Tv = [];
+			for (let i = 1; i < points.length - 1; ++i) {
+				const pt = points[i];
+				const p = ts[i];
+				const w = w0 + (w1 - w0) * p;
+
+				// find appropriate t values if we assume the line begins
+				// with the same gradient as prevControl
+
+				// p = (TCurve/2 - 1/2) t^3 + (3/2 - 3/2 TCurve) t^2 + Bt
+				// we assert that solveCubic gives the solution for [0 1] at index 0
+				const t = solveCubic(TCurve * 0.5 - 0.5, 1.5 - TCurve * 1.5, TCurve, -p)[0];
+
+				const tt = t * t;
+				const ttt = tt * t;
+				adjustedPoints.push(ptMul(ptMad(dN, -ttt, ptSub(pt, p0)), w));
+				Tv.push([(t - tt) * w, (t - ttt) * w]);
+			}
+			const P = ptArrayToMat(adjustedPoints);
+			const T = fnToMat(Tv, ([t1, t2]) => {
+				const t2mt1 = t2 - t1;
+				return [
+					c1n.x * (t1 - t2mt1), t2mt1, 0,
+					c1n.y * (t1 - t2mt1), 0, t2mt1,
+				];
+			});
+			const C = solve(matReshape(P), matReshape(T, 3), CUBIC_M_INV_FIXED_ENDS_START_GRAD);
+			if (C) {
+				const [c1l, c2x, c2y] = C.values;
+				if (c1l > 0) {
+					return new CubicBezier(p0, ptMad(c1n, c1l, p0), ptAdd(p0, { x: c2x, y: c2y }), pN);
+				}
+			}
+		}
+
+		const adjustedPoints = [];
+		const Tv = [];
+		for (let i = 1; i < points.length - 1; ++i) {
+			const pt = points[i];
+			const t = ts[i];
+			const w = w0 + t * (w1 - w0);
+			const tt = t * t;
+			const ttt = tt * t;
+			adjustedPoints.push(ptMul(ptMad(dN, -ttt, ptSub(pt, p0)), w));
+			Tv.push([(t - tt) * w, (t - ttt) * w]);
+		}
+		const P = ptArrayToMat(adjustedPoints);
+		const T = array2DToMat(Tv);
+		const C = solve(P, T, CUBIC_M_INV_FIXED_ENDS);
+		if (C) {
+			const [c1, c2] = matToPtArray(C);
+			return new CubicBezier(p0, ptAdd(p0, c1), ptAdd(p0, c2), pN);
+		}
+	}
+
+	return leastSquaresFitQuadraticFixEnds(points, prevControl)?.elevate();
+}
+
+const QUADRATIC_M = new Matrix([
+	1, 0, 0,
+	-2, 2, 0,
+	1, -2, 1,
+], 3, 3);
+
+const CUBIC_M = new Matrix([
+	//1, t, t2, t3
+	 1,  0,  0,  0, // p0
+	-3,  3,  0,  0, // c1
+	 3, -6,  3,  0, // c2
+	-1,  3, -3,  1, // p3
+], 4, 4);
+
+const QUADRATIC_M_INV = new Matrix([
+	1, 0, 0,
+	1, 0.5, 0,
+	1, 1, 1,
+], 3, 3);
+const QUADRATIC_M_INV_FIXED_ENDS = 0.5;
+const CUBIC_M_INV = new Matrix([
+	1, 0, 0, 0,
+	1, 1/3, 0, 0,
+	1, 2/3, 1/3, 0,
+	1, 1, 1, 1,
+], 4, 4);
+const CUBIC_M_INV_FIXED_ENDS = new Matrix([
+	1/3, 1/3,
+	1/3, 2/3,
+], 2, 2);
+const CUBIC_M_INV_FIXED_ENDS_START_GRAD = 1 / 3;
+
+function guidedLengthEstimate(curve, maxError, splits, recursionLimit = 10) {
+	const est0 = curve.lengthEstimate(maxError, 0);
+
+	if (est0.maxError > maxError && recursionLimit > 0) {
+		// sort sub-curve small-to-large so that we can give greatest error tolerance to the larger curves
+		const s = curve.split(splits)
+			.sort((a, b) => ptDist2(a.p0, a.p3) - ptDist2(b.p0, b.p3));
+		if (s.length > 1) {
+			let se = maxError / s.length;
+			const sr = recursionLimit - 1;
+			let l = s[0].lengthEstimate(se, sr);
+			for (let i = 1; i < s.length; ++i) {
+				se = (maxError - l.maxError) / (s.length - i);
+				l = addEstimates(l, s[i].lengthEstimate(se, sr));
+			}
+			return l;
+		}
+		return curve.lengthEstimate(maxError, recursionLimit);
+	}
+
+	return est0;
+}
+
+function getNormalisation(p0, p1) {
+	const d = ptSub(p1, p0);
+	const scale2 = ptLen2(d);
+	if (!scale2) {
+		return null;
+	}
+	const s = ptMul(d, 1 / scale2);
+	const fn = ptTransform(
+		s.x, s.y, -p0.x * s.x - p0.y * s.y,
+		-s.y, s.x, p0.x * s.y - p0.y * s.x,
+	);
+	return { scale2, fn };
+}
+
+const addEstimates = (a, b) => ({
+	best: a.best + b.best,
+	maxError: a.maxError + b.maxError,
+	divisions: a.divisions + b.divisions,
+});
+
+function measureFunction(f, start, end, step) {
+	let sum = 0;
+	let prev = f(start);
+	for (let p = start + step; p < end; p += step) {
+		const pt = f(p);
+		sum += ptDist(pt, prev);
+		prev = pt;
+	}
+	const pt = f(end);
+	sum += ptDist(pt, prev);
+	return sum;
+}
+
+const ptDot = (a, b) => a.x * b.x + a.y * b.y;
+const ptCross = (a, b) => a.x * b.y - a.y * b.x;
+
+const ptLen2 = (pt) => pt.x * pt.x + pt.y * pt.y;
+const ptLen = (pt) => Math.hypot(pt.x, pt.y);
+
+const ptDist2 = (a, b) =>
+	(a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
+const ptDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+const ptNorm = (pt) => ptMul(pt, 1 / ptLen(pt));
+
+const ptAdd = (a, b) => ({ x: a.x + b.x, y: a.y + b.y });
+const ptMul = (pt, m) => ({ x: pt.x * m, y: pt.y * m });
+const ptMad = (a, m, b) => ({ x: a.x * m + b.x, y: a.y * m + b.y });
+const ptSub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y });
+
+const ptLerp = (a, b, t) => ({
+	x: a.x + (b.x - a.x) * t,
+	y: a.y + (b.y - a.y) * t,
+});
+
+const ptSVG = (pt) => `${pt.x} ${pt.y}`;
+
+const ptTransform = (mxx, mxy, dx, myx, myy, dy) => (pt) => ({
+	x: pt.x * mxx + pt.y * mxy + dx,
+	y: pt.x * myx + pt.y * myy + dy,
+});
+
+function solveLinear(a, b) {
+	return a ? [-b / a] : [];
+}
+
+function solveQuadratic(a, b, c) {
+	if (!a) {
+		return solveLinear(b, c);
+	}
+	const disc = b * b - 4 * a * c;
+	const m = 0.5 / a;
+	if (disc > 0) {
+		const root = Math.sqrt(disc);
+		return [(-b + root) * m, (-b - root) * m];
+	}
+	if (!disc) {
+		return [-b * m];
+	}
+	return [];
+}
+
+function solveCubic(a, b, c, d) {
+	if (!a) {
+		return solveQuadratic(b, c, d);
+	}
+
+	// thanks, https://pomax.github.io/bezierinfo/#extremities
+	// a->b  b->c  c->d  d->a
+
+	const m = 1 / a;
+	const s = b * m * (1 / 3);
+	const p = c * m * (1 / 3) - s * s;
+	const p3 = p * p * p;
+	const q = (s * (2 * s * s - c * m) + d * m) * 0.5;
+	const disc = q * q + p3;
+	if (disc < 0) {
+		const r = Math.sqrt(-p3);
+		const phi = Math.acos(Math.max(-1, Math.min(1, -q / r))) * (1 / 3);
+		const t1 = 2 * Math.cbrt(r);
+		return [
+			t1 * Math.cos(phi - Math.PI * (2 / 3)) - s,
+			t1 * Math.cos(phi) - s,
+			t1 * Math.cos(phi + Math.PI * (2 / 3)) - s,
+		];
+	}
+
+	if (!disc) {
+		const u1 = Math.cbrt(q);
+		return [-2 * u1 - s, u1 - s];
+	}
+
+	const root = Math.sqrt(disc);
+	return [Math.cbrt(root - q) - Math.cbrt(root + q) - s];
+}
+
+class CurveDrawer {
+	constructor(onBegin, onSegment, onLive, onDone, onCancel, minStep, minError, maxError) {
+		this._onBegin = onBegin;
+		this._onSegment = onSegment;
+		this._onLive = onLive;
+		this._onDone = onDone;
+		this._onCancel = onCancel;
+		this._minStep = minStep;
+		this._minError = minError * minError;
+		this._maxError = maxError * maxError;
+		this._state = undefined;
+	}
+
+	_fit(points, prevControl) {
+		if (!points.length) {
+			throw new Error('nothing to fit');
+		}
+		const p0 = points[0];
+		const pN = points[points.length - 1];
+		const curve = leastSquaresFitCubicFixEnds(points, prevControl, 1, 1);
+		const norm = curve?.normalise();
+		if (!norm?.curve) {
+			return { curve: new CubicBezier(p0, p0, pN, pN), dist: Number.POSITIVE_INFINITY };
+		}
+		let targetNormArea = 0;
+		let targetNormMoment = 0;
+		const targetLength = pN.d - p0.d;
+		let prevPt = norm.fn(p0);
+		for (let i = 1; i < points.length; ++i) {
+			const pt = norm.fn(points[i]);
+			const w = pt.x - prevPt.x;
+			targetNormArea += w * (prevPt.y + pt.y) / 2;
+			targetNormMoment += w * (prevPt.y * prevPt.x + pt.y * pt.x) / 2;
+			prevPt = pt;
+		}
+		const scale = Math.sqrt(norm.scale2);
+		const dArea = (targetNormArea - norm.curve.area()) * scale;
+		const dMoment = (targetNormMoment - norm.curve.moment()) * scale;
+		const dLength = targetLength - curve.lengthEstimate(0.01 * scale).best;
+		return {
+			curve,
+			dist: dArea * dArea + dMoment * dMoment + dLength * dLength,
+		};
+	}
+
+	begin = (pt) => {
+		const wpt = { ...pt, d: 0 };
+		this._state = {
+			_live: [wpt],
+			_prevControl: null,
+			_best: this._fit([wpt], null).curve,
+			_bestN: 1,
+			_bestS: Number.POSITIVE_INFINITY,
+		};
+		this._onBegin();
+	};
+
+	draw = (pt, done = false) => {
+		const s = this._state;
+		if (!s) {
+			return;
+		}
+		const live = s._live;
+		const prevPt = live[live.length - 1];
+		const dist = ptDist(prevPt, pt);
+		if (!done && dist < this._minStep) {
+			return;
+		}
+		const wpt = { ...pt, d: prevPt.d + dist };
+		live.push(wpt);
+
+		let fit = this._fit(live, s._prevControl);
+		if (
+			fit.dist < this._minError
+			|| s._bestN < 2
+			|| fit.dist < s._bestS
+		) {
+			s._bestN = live.length;
+			s._bestS = fit.dist;
+			s._best = fit.curve;
+		} else if (fit.dist > this._maxError) {
+			this._onSegment(s._best, s._bestN);
+			live.splice(0, s._bestN - 1);
+			s._prevControl = s._best.c2;
+			fit = this._fit(live, s._prevControl);
+			s._bestN = live.length;
+			s._bestS = fit.dist;
+			s._best = fit.curve;
+		}
+
+		if (!done) {
+			this._onLive(fit.curve);
+		} else if (live.length > 1) {
+			this._onSegment(fit.curve, live.length);
+			this._onDone();
+		}
+	};
+
+	cancel = () => {
+		this._state = undefined;
+		this._onCancel();
+	};
+}
+
+class DragHandler {
+	constructor(pointRegion, w, h, onBegin, onMove, onCancel) {
+		this._state = undefined;
+		this._pointRegion = pointRegion;
+		this._w = w;
+		this._h = h;
+		this._onBegin = onBegin;
+		this._onMove = onMove;
+		this._onCancel = onCancel;
+	}
+
+	detach() {
+		if (!this._state) {
+			return;
+		}
+		const o = this._state.target;
+		o.releasePointerCapture(this._state.id);
+		o.ownerDocument.documentElement.style.cursor = '';
+		o.removeEventListener('pointerup', this.stop);
+		o.removeEventListener('pointermove', this.move);
+		o.removeEventListener('pointercancel', this.cancel);
+		this._state = undefined;
+	}
+
+	toPt(e) {
+		const p = this._pointRegion;
+		const b = p.getBoundingClientRect();
+		return {
+			x: (e.clientX - b.left - p.clientLeft) * this._w / p.clientWidth,
+			y: (e.clientY - b.top - p.clientTop) * this._h / p.clientHeight,
+		};
+	}
+
+	begin = (e) => {
+		if (this._state || !e.isPrimary || e.button !== 0) {
+			return;
+		}
+		const id = e.pointerId;
+		const o = e.currentTarget;
+
+		this._state = { id, target: o };
+
+		o.addEventListener('pointerup', this.stop);
+		o.addEventListener('pointermove', this.move);
+		o.addEventListener('pointercancel', this.cancel);
+		o.setPointerCapture(id);
+		e.preventDefault();
+
+		// work around Safari not locking cursor when using setPointerCapture
+		o.ownerDocument.documentElement.style.cursor = o.style.cursor;
+
+		this._onBegin(this.toPt(e));
+	};
+
+	move = (e) => {
+		if (e.pointerId === this._state?.id) {
+			this._onMove(this.toPt(e), false);
+		}
+	};
+
+	stop = (e) => {
+		if (e.pointerId === this._state?.id) {
+			this.detach();
+			this._onMove(this.toPt(e), true);
+		}
+	};
+
+	cancel = (e) => {
+		if (e.pointerId === this._state?.id) {
+			this.detach();
+			this._onCancel();
+		}
+	};
+}
+
+function grabbable(o, update, initial = { x: 0, y: 0 }) {
+	const r = { ...initial };
+	const draw = () => {
+		o.style.left = `${r.x * 100}%`;
+		o.style.top = `${r.y * 100}%`;
+	};
+	const move = (p) => {
+		r.x = p.x;
+		r.y = p.y;
+		draw();
+		update();
+	};
+	const handler = new DragHandler(o.parentElement, 1, 1, move, move, () => {});
+	o.addEventListener('pointerdown', handler.begin);
+	draw();
+	return r;
+}
+
+function mk(type, attrs = {}, children = []) {
+	/** @type {HTMLElement} */ const o = document.createElement(type);
+	for (const k in attrs) {
+		o.setAttribute(k, attrs[k]);
+	}
+	o.append(...children);
+	return o;
+}
+
+function mkSVG(type, attrs = {}, children = []) {
+	/** @type {SVGElement} */ const o = document.createElementNS(
+		'http://www.w3.org/2000/svg',
+		type,
+	);
+	for (const k in attrs) {
+		o.setAttribute(k, attrs[k]);
+	}
+	o.append(...children);
+	return o;
+}
+
+(() => {
+	const svg = mkSVG('svg', {
+		version: '1.1',
+		viewBox: '0 0 1 1',
+		width: 500,
+		height: 500,
+	});
+	const pathLive = mkSVG('path', { 'class': 'live' });
+
+	document.body.append(mk('div', { 'class': 'playground draw' }, [svg]));
+
+	const drawer = new CurveDrawer(
+		() => svg.replaceChildren(pathLive),
+		(seg, n) => svg.append(mkSVG('path', { 'class': `done n${n}`, 'd': seg.toSVGPath() })),
+		(live) => pathLive.setAttribute('d', live.toSVGPath()),
+		() => {
+			pathLive.setAttribute('d', '');
+		},
+		() => svg.replaceChildren(),
+		0.005,
+		0.0005,
+		0.0008,
+	);
+	const drawPointer = new DragHandler(svg, 1, 1, drawer.begin, drawer.draw, drawer.cancel);
+	svg.addEventListener('pointerdown', drawPointer.begin);
+})();
+
+(() => {
+	const pathCtl = mkSVG('path', { 'class': 'ctl' });
+	const pathCurve = mkSVG('path', { 'class': 'curve' });
+	const svg = mkSVG('svg', {
+		version: '1.1',
+		viewBox: '0 0 1 1',
+		width: 500,
+		height: 500,
+	}, [pathCtl, pathCurve]);
+
+	const dcprev = mk('div', { 'class': 'ctl prev' });
+	const dc0 = mk('div', { 'class': 'ctl end' });
+	const dcs = [];
+	for (let i = 0; i < 2; ++i) {
+		dcs.push(mk('div', { 'class': 'ctl mid' }));
+	}
+	const dcN = mk('div', { 'class': 'ctl end' });
+
+	document.body.append(mk('div', { 'class': 'playground' }, [svg, dcprev, dc0, ...dcs, dcN]));
+
+	const pts = [];
+
+	function update() {
+		const bezier = leastSquaresFitCubicFixEnds(pts, pprev, 1, 1);
+		if (bezier) {
+			pathCtl.setAttribute('d', bezier.toSVGPath('M', 'L'));
+			pathCurve.setAttribute('d', bezier.toSVGPath());
+		} else {
+			pathCtl.setAttribute('d', '');
+			pathCurve.setAttribute('d', '');
+		}
+	}
+
+	const lineStart = { x: 0.2, y: 0.5 };
+	const lineEnd = { x: 0.8, y: 0.5 };
+	const pprev = grabbable(dcprev, update, { x: 0.1, y: 0.4 });
+	pts.push(grabbable(dc0, update, lineStart));
+	for (let i = 0; i < dcs.length; ++i) {
+		pts.push(grabbable(dcs[i], update, ptLerp(lineStart, lineEnd, (i + 1) / (dcs.length + 1))));
+	}
+	pts.push(grabbable(dcN, update, lineEnd));
+	update();
+})();
+
+(() => {
+	const pathCtl = mkSVG('path', { 'class': 'ctl' });
+	const pathCurve = mkSVG('path', { 'class': 'curve' });
+	const pathSplits = mkSVG('path', { 'class': 'split' });
+	const svg = mkSVG('svg', {
+		version: '1.1',
+		viewBox: '0 0 1 1',
+		width: 500,
+		height: 500,
+	}, [
+		pathCtl,
+		pathCurve,
+		pathSplits,
+	]);
+	const dc0 = mk('div', { 'class': 'ctl end' });
+	const dc1 = mk('div', { 'class': 'ctl mid' });
+	const dc2 = mk('div', { 'class': 'ctl mid' });
+	const dc3 = mk('div', { 'class': 'ctl end' });
+	const out = mk('pre');
+
+	document.body.append(
+		mk('div', { 'class': 'playground' }, [svg, dc0, dc1, dc2, dc3]),
+		out,
+	);
+
+	function update() {
+		const bezier = new CubicBezier(p0, p1, p2, p3);
+		pathCtl.setAttribute('d', bezier.toSVGPath('M', 'L'));
+		pathCurve.setAttribute('d', bezier.toSVGPath());
+
+		const norm = bezier.normalise();
+		if (!norm.curve) {
+			return; // TODO
+		}
+		const normBezier = norm.curve;
+
+		const curveInflectionTs = normBezier.inflectionTs();
+		const curveXLimTs = normBezier.xTurningPointTs();
+		const curveYLimTs = normBezier.yTurningPointTs();
+
+		const splits = [...curveInflectionTs, ...curveXLimTs, ...curveYLimTs]
+			.filter((t) => t > 0 && t < 1)
+			.sort();
+
+		pathSplits.setAttribute('d', splits.map((t) => `M${ptSVG(bezier.at(t))}v0.001`).join(''));
+
+		const curveArea = normBezier.area();
+		const curveMoment = normBezier.moment();
+
+		const printLengthEstimate = (est) => `${(est.best).toFixed(6)} ±${(est.maxError).toPrecision(1)} [parts: ${est.divisions}]`;
+
+		const scale = Math.sqrt(norm.scale2);
+		const maxError = 1e-4;
+		const samples = 1000;
+		const begin1 = performance.now();
+		for (let r = 0; r < samples; ++r) {
+			bezier.lengthEstimate(maxError);
+		}
+		const end1 = performance.now();
+		const begin2 = performance.now();
+		for (let r = 0; r < samples; ++r) {
+			guidedLengthEstimate(bezier, maxError, curveXLimTs);
+		}
+		const end2 = performance.now();
+		out.innerText = [
+			`Area: ${(curveArea * scale * scale).toFixed(3)}`,
+			`Estimated Length [${maxError.toPrecision(1)}]: ${printLengthEstimate(bezier.lengthEstimate(maxError))} (${((end1 - begin1) / samples).toFixed(4)}ms)`,
+			`Guided Estimated Length [${maxError.toPrecision(1)}]: ${printLengthEstimate(guidedLengthEstimate(bezier, maxError, curveXLimTs))} (${((end2 - begin2) / samples).toFixed(4)}ms)`,
+			`True Length: ${measureFunction(bezier.at.bind(bezier), 0, 1, 1e-6).toFixed(6)}`,
+			`Moment: ${(curveMoment * scale * scale * scale).toFixed(3)}`,
+		].join('\n');
+	}
+
+	const p0 = grabbable(dc0, update, { x: 0.1, y: 0.1 });
+	const p1 = grabbable(dc1, update, { x: 0.9, y: 0.1 });
+	const p2 = grabbable(dc2, update, { x: 0.1, y: 0.9 });
+	const p3 = grabbable(dc3, update, { x: 0.7, y: 0.9 });
+	update();
+})();
+
+</script>
+</head>
+<body>
+</body>
+</html>

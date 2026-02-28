@@ -36,8 +36,19 @@ body {
 			stroke: black;
 		}
 
+		.intersection-shape {
+			fill: none;
+			stroke: #00800066;
+			vector-effect: non-scaling-stroke;
+		}
+
 		.split {
 			stroke: #ff0000;
+			stroke-width: 5;
+		}
+
+		.intersections {
+			stroke: #00ff00;
 			stroke-width: 5;
 		}
 
@@ -337,6 +348,10 @@ class Line {
 		return ptLerp(this.p0, this.p1, t);
 	}
 
+	normal() {
+		return ptNorm({ x: this.p0.y - this.p1.y, y: this.p1.x - this.p0.x });
+	}
+
 	derivative() {
 		return ptSub(this.p1, this.p0);
 	}
@@ -482,13 +497,29 @@ class CubicBezier {
 	}
 
 	normalise() {
-		const norm = getNormalisation(this.p0, this.p3);
+		const norm = (
+			getNormalisation(this.p0, this.p3) ??
+			getNormalisation(this.p0, this.c1) ??
+			getNormalisation(this.p0, this.c2)
+		);
 		if (!norm) {
-			return { scale2: 0, curve: null, fn: () => ({ x: 0, y: 0 }) }; // TODO
+			return {
+				scale2: 1,
+				curve: new NormalisedCubicBezier(
+					NormalisedCubicBezier.p0,
+					NormalisedCubicBezier.p0,
+					0,
+				),
+				fn: (pt) => ptSub(pt, this.p0),
+			};
 		}
 		return {
 			...norm,
-			curve: new NormalisedCubicBezier(norm.fn(this.c1), norm.fn(this.c2)),
+			curve: new NormalisedCubicBezier(
+				norm.fn(this.c1),
+				norm.fn(this.c2),
+				norm.fn(this.p3).x,
+			),
 		};
 	}
 
@@ -506,6 +537,36 @@ class CubicBezier {
 			),
 			T,
 			ptMul(this.p3, t * t * t),
+		);
+	}
+
+	xAt(t) {
+		const T = 1 - t;
+		return this.p0.x * T * T * T + (3 * T * (this.c1.x * T + this.c2.x * t) + this.p3.x * t * t) * t;
+	}
+
+	yAt(t) {
+		const T = 1 - t;
+		return this.p0.y * T * T * T + (3 * T * (this.c1.y * T + this.c2.y * t) + this.p3.y * t * t) * t;
+	}
+
+	tsOnXEq(x) {
+		const { p0, c1, c2, p3 } = this;
+		return solveCubic(
+			p3.x - p0.x + 3 * (c1.x - c2.x),
+			3 * (p0.x + c2.x) - 6 * c1.x,
+			3 * (c1.x - p0.x),
+			p0.x - x,
+		);
+	}
+
+	tsOnYEq(y) {
+		const { p0, c1, c2, p3 } = this;
+		return solveCubic(
+			p3.y - p0.y + 3 * (c1.y - c2.y),
+			3 * (p0.y + c2.y) - 6 * c1.y,
+			3 * (c1.y - p0.y),
+			p0.y - y,
 		);
 	}
 
@@ -573,6 +634,64 @@ class CubicBezier {
 			maxError: err,
 			divisions: 1,
 		};
+	}
+
+	tsOnLine(line) {
+		// thanks, https://pomax.github.io/bezierinfo/#intersections
+		const norm = getNormalisation(line.p0, line.p1);
+		if (!norm) {
+			return [];
+		}
+		const curve = new CubicBezier(
+			norm.fn(this.p0),
+			norm.fn(this.c1),
+			norm.fn(this.c2),
+			norm.fn(this.p3),
+		);
+		return curve.tsOnYEq(0).filter((t) => {
+			const x = curve.xAt(t);
+			return t >= 0 && t <= 1 && x >= 0 && x <= 1;
+		});
+	}
+
+	tsOnThickLine(line, thickness) {
+		// thanks, https://pomax.github.io/bezierinfo/#intersections
+		const normFn = getNormalisationNoScale(line.p0, line.p1);
+		const curve = new CubicBezier(
+			normFn(this.p0),
+			normFn(this.c1),
+			normFn(this.c2),
+			normFn(this.p3),
+		);
+		const len = ptDist(line.p0, line.p1);
+		const r = thickness * 0.5;
+		const sides = [
+			...curve.tsOnYEq(-r),
+			...curve.tsOnYEq(r),
+		];
+		const ends = [
+			...curve.tsOnXEq(0),
+			...curve.tsOnXEq(len),
+		];
+		return [
+			...sides.filter((t) => {
+				const x = curve.xAt(t);
+				return t >= 0 && t <= 1 && x >= 0 && x <= len;
+			}),
+			...ends.filter((t) => {
+				const y = curve.yAt(t);
+				return t >= 0 && t <= 1 && y >= -r && y <= r;
+			}),
+		].map((t) => [t]); // TODO: add sign of derivative (entering/exiting line)
+	}
+
+	tsOnCircle(center, rad2, maxError) {
+		const norm = this.normalise();
+		return norm.curve.tsOnCircle(
+			norm.fn(center),
+			rad2 / norm.scale2,
+			maxError, // in terms of t: no scaling
+		);
 	}
 
 	split(splits, minRange = 1e-6) {
@@ -657,15 +776,15 @@ const GAUSS_LEGENDRE_COEFFS_24_HALF = [
 ];
 
 class NormalisedCubicBezier {
-	constructor(c1, c2) {
+	constructor(c1, c2, p3x) {
 		this.c1 = c1;
 		this.c2 = c2;
+		this.p3 = { x: p3x, y: 0 };
 	}
 
 	static degree = 3;
 
 	static p0 = { x: 0, y: 0 };
-	static p3 = { x: 1, y: 0 };
 
 	at(t) {
 		const T = 1 - t;
@@ -676,15 +795,25 @@ class NormalisedCubicBezier {
 				ptMul(this.c2, t),
 			),
 			3 * t * T,
-			ptMul(NormalisedCubicBezier.p3, t * t * t),
+			ptMul(this.p3, t * t * t),
 		);
+	}
+
+	xAt(t) {
+		const T = 1 - t;
+		return 3 * t * T * (this.c1.x * T + this.c2.x * t) + this.p3.x * t * t * t;
+	}
+
+	yAt(t) {
+		const T = 1 - t;
+		return 3 * t * T * (this.c1.y * T + this.c2.y * t);
 	}
 
 	derivative() {
 		return new QuadraticBezier(
 			ptMul(this.c1, 3),
 			ptMul(ptSub(this.c2, this.c1), 3),
-			ptMul(ptSub(NormalisedCubicBezier.p3, this.c2), 3),
+			ptMul(ptSub(this.p3, this.c2), 3),
 		);
 	}
 
@@ -705,10 +834,11 @@ class NormalisedCubicBezier {
 		// note: curve function is simplified by skipping denominator - this form only used for finding zeros
 		// [scaled] curve(t) = (3*s+2*c1y-c2y)*t^2 + (-3*s-c1y)*t + s
 		// s = c1x*c2y - c2x*c1y
+		const l = this.p3.x;
 		const s = this.c1.x * this.c2.y - this.c1.y * this.c2.x;
 		return solveQuadratic(
-			3 * s + 2 * this.c1.y - this.c2.y,
-			-3 * s - this.c1.y,
+			3 * s + (2 * this.c1.y - this.c2.y) * l,
+			-3 * s - this.c1.y * l,
 			s,
 		);
 	}
@@ -716,7 +846,7 @@ class NormalisedCubicBezier {
 	xTurningPointTs() {
 		// thanks, https://pomax.github.io/bezierinfo/
 		return solveQuadratic(
-			1 + 3 * (this.c1.x - this.c2.x),
+			this.p3.x + 3 * (this.c1.x - this.c2.x),
 			2 * this.c2.x - 4 * this.c1.x,
 			this.c1.x,
 		);
@@ -731,23 +861,87 @@ class NormalisedCubicBezier {
 		);
 	}
 
+	bounds() {
+		const xLim = this.xTurningPointTs()
+			.filter((t) => t > 0 && t < 1)
+			.map((t) => this.xAt(t));
+		const yLim = this.yTurningPointTs()
+			.filter((t) => t > 0 && t < 1)
+			.map((t) => this.yAt(t));
+		const minX = Math.min(0, ...xLim);
+		const maxX = Math.max(1, ...xLim);
+		const minY = Math.min(0, ...yLim);
+		const maxY = Math.max(0, ...yLim);
+		return { minX, minY, maxX, maxY };
+	}
+
+	tsOnCircleFn() {
+		const bounds = this.bounds();
+
+		// distance equation:
+		// A = c1x, B = c1y, C = c2x, D = c2y, E = p3x, X = center.x, Y = center.y
+		// r2 = (
+		//   (3A*t(1-t)^2+3C*(1-t)t^2+E*t^3-X)^2 +
+		//   (3B*t(1-t)^2+3D*(1-t)t^2+F*t^3-Y)^2
+		// )
+
+		const { c1, c2, p3 } = this;
+		const a = ptLen2(c1) * 9;
+		const b = ptDot(c1, c2) * 18;
+		const c = ptDot(c1, p3) * 6 + ptLen2(c2) * 9;
+		const d = ptDot(c2, p3) * 6;
+
+		const f6 = a - b + c - d + ptLen2(p3);
+		const f5 = -4 * a + 3 * b - 2 * c + d;
+		const f4 = 6 * a - 3 * b + c;
+		const f3 = -4 * a + b;
+
+		return (center, rad2, maxError = 1e-4) => {
+			const dx = Math.max(0, bounds.minX - center.x, center.x - bounds.maxX);
+			const dy = Math.max(0, bounds.minY - center.y, center.y - bounds.maxY);
+			if (dx * dx + dy * dy > rad2) {
+				return [];
+			}
+			const c1c = ptDot(c1, center) * 6;
+			const c2c = ptDot(c2, center) * 6;
+
+			// terms for t^n in distance equation
+			return solveO6(
+				f6,
+				f5,
+				f4,
+				f3 - c1c + c2c - 2 * ptDot(p3, center),
+				a + 2 * c1c - c2c,
+				-c1c,
+				ptLen2(center) - rad2,
+				{ min: 0, max: 1, maxError },
+			);
+		}
+	}
+
+	tsOnCircle(center, rad2, maxError = 1e-4) {
+		return this.tsOnCircleFn()(center, rad2, maxError);
+	}
+
 	area() {
 		// thanks, https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html
-		return 0.15 * ((1 + this.c2.x) * this.c1.y + (2 - this.c1.x) * this.c2.y);
+
+		return 0.15 * (
+			(this.p3.x + this.c2.x) * this.c1.y +
+			(2 * this.p3.x - this.c1.x) * this.c2.y
+		);
 	}
 
 	moment() {
 		// thanks, https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html
+		const l = this.p3.x;
 		const x1 = this.c1.x;
 		const y1 = this.c1.y;
-		const x2 = 1 - this.c2.x;
+		const x2 = l - this.c2.x;
 		const y2 = this.c2.y;
 		return (
-			+ 34 * y1
-			+ 50 * y2
-			+ 15 * (x1 * y1 - x2 * y2)
-			- 33 * y1 * x2
-			+ 9 * x1 * y2
+			+ (34 * y1 + 50 * y2) * l * l
+			+ (15 * (x1 * y1 - x2 * y2) + 9 * x1 * y2 - 33 * y1 * x2) * l
 			+ 9 * (y1 * x2 + x1 * y2) * (x2 - x1)
 		) * (1 / 280);
 	}
@@ -756,13 +950,13 @@ class NormalisedCubicBezier {
 		// thanks, https://en.wikipedia.org/wiki/De_Casteljau's_algorithm
 		const i0 = ptLerp(NormalisedCubicBezier.p0, this.c1, t);
 		const i1 = ptLerp(this.c1, this.c2, t);
-		const i2 = ptLerp(this.c2, NormalisedCubicBezier.p3, t);
+		const i2 = ptLerp(this.c2, this.p3, t);
 		const j0 = ptLerp(i0, i1, t);
 		const j1 = ptLerp(i1, i2, t);
 		const p = ptLerp(j0, j1, t);
 		return [
 			new CubicBezier(NormalisedCubicBezier.p0, i0, j0, p),
-			new CubicBezier(p, j1, i2, NormalisedCubicBezier.p3),
+			new CubicBezier(p, j1, i2, this.p3),
 		];
 	}
 
@@ -775,7 +969,7 @@ class NormalisedCubicBezier {
 			NormalisedCubicBezier.p0,
 			this.c1,
 			this.c2,
-			NormalisedCubicBezier.p3,
+			this.p3,
 		);
 	}
 }
@@ -878,8 +1072,7 @@ function leastSquaresFitQuadraticFixEnds(points, prevControl = null, w0 = 1, w1 
 				// with the same gradient as prevControl
 
 				// p = t*t*(1 - TCurve/2) + t*TCurve/2
-				// we assert that solveQuadratic gives the solution for [0 1] at index 0
-				const t = solveQuadratic(1 - TCurve * 0.5, TCurve * 0.5, -p)[0];
+				const t = solveQuadratic(1 - TCurve * 0.5, TCurve * 0.5, -p).filter((t) => t >= 0 && t <= 1)[0] ?? p;
 
 				const tt = t * t;
 				adjustedPoints.push(ptMul(ptMad(dN, -tt, ptSub(pt, p0)), w));
@@ -948,8 +1141,7 @@ function leastSquaresFitCubicFixEnds(points, prevControl = null, w0 = 1, w1 = 1)
 				// with the same gradient as prevControl
 
 				// p = (TCurve/2 - 1/2) t^3 + (3/2 - 3/2 TCurve) t^2 + Bt
-				// we assert that solveCubic gives the solution for [0 1] at index 0
-				const t = solveCubic(TCurve * 0.5 - 0.5, 1.5 - TCurve * 1.5, TCurve, -p)[0];
+				const t = solveCubic(TCurve * 0.5 - 0.5, 1.5 - TCurve * 1.5, TCurve, -p).filter((t) => t >= 0 && t <= 1)[0] ?? p;
 
 				const tt = t * t;
 				const ttt = tt * t;
@@ -1065,6 +1257,19 @@ function getNormalisation(p0, p1) {
 	return { scale2, fn };
 }
 
+function getNormalisationNoScale(p0, p1) {
+	const d = ptSub(p1, p0);
+	const scale = ptLen(d);
+	if (!scale) {
+		return (pt) => ptSub(pt, p0);
+	}
+	const s = ptMul(d, 1 / scale);
+	return ptTransform(
+		s.x, s.y, -p0.x * s.x - p0.y * s.y,
+		-s.y, s.x, p0.x * s.y - p0.y * s.x,
+	);
+}
+
 const addEstimates = (a, b) => ({
 	best: a.best + b.best,
 	maxError: a.maxError + b.maxError,
@@ -1167,6 +1372,97 @@ function solveCubic(a, b, c, d) {
 	return [Math.cbrt(root - q) - Math.cbrt(root + q) - s];
 }
 
+function solveO6(f6, f5, f4, f3, f2, f1, f0, { min = 0, max = 1, maxError = 1e-4 } = {}) {
+	// returns 0 points and sign of derivative
+	// does not include double roots
+	// (i.e. sign of derivative is always +1 or -1, not 0)
+
+	// equation is order >4, so cannot be directly solved;
+	// solve its third derivative instead, then use binary search to
+	// find all turning points and crossings.
+	// (technically the second derivative is already analytically
+	// solvable, but it is a complex algorithm)
+
+	// derivative
+	const df5 = f6 * 6;
+	const df4 = f5 * 5;
+	const df3 = f4 * 4;
+	const df2 = f3 * 3;
+	const df1 = f2 * 2;
+	const df0 = f1;
+
+	// d^2
+	const ddf4 = df5 * 5;
+	const ddf3 = df4 * 4;
+	const ddf2 = df3 * 3;
+	const ddf1 = df2 * 2;
+	const ddf0 = df1;
+
+	// solve third derivative = 0 analytically
+	const starts = solveCubic(ddf4 * 4, ddf3 * 3, ddf2 * 2, ddf1)
+		.filter((x) => x > min && x < max)
+		.sort();
+	starts.push(max);
+
+	function at(x1) {
+		const x2 = x1 * x1;
+		const x3 = x2 * x1;
+		const x4 = x2 * x2;
+		const x5 = x3 * x2;
+		const x6 = x3 * x3;
+		return {
+			y: f0 + f1 * x1 + f2 * x2 + f3 * x3 + f4 * x4 + f5 * x5 + f6 * x6,
+			d: df0 + df1 * x1 + df2 * x2 + df3 * x3 + df4 * x4 + df5 * x5,
+			dd: ddf0 + ddf1 * x1 + ddf2 * x2 + ddf3 * x3 + ddf4 * x4,
+		};
+	};
+
+	function maybeSolutionBetween(lv, hv) {
+		// check if our points straddle the axis, or the derivative or
+		// second derivative changes in a way that could suggest a
+		// crossing. (no need to check third+ derivative, since we
+		// already use its roots as our starting points, so it will
+		// never cross 0 within a segment)
+		const yl0 = lv.y < 0;
+		const dl0 = lv.d < 0;
+		return (
+			(yl0 !== (hv.y < 0)) ||
+			(dl0 !== yl0 && yl0 === (hv.d < 0)) ||
+			((lv.dd < 0) !== dl0 && dl0 === (hv.dd < 0))
+		);
+	}
+
+	const solutions = [];
+
+	function recur(l, h, lv, hv) {
+		if (h - l > maxError) {
+			const mid = (l + h) * 0.5;
+			const midv = at(mid);
+			if (maybeSolutionBetween(lv, midv)) {
+				recur(l, mid, lv, midv);
+			}
+			if (maybeSolutionBetween(midv, hv)) {
+				recur(mid, h, midv, hv);
+			}
+		} else if ((lv.y < 0) !== (hv.y < 0)) {
+			solutions.push([l + (h - l) * lv.y / (lv.y - hv.y), lv.y < 0 ? -1 : 1]);
+		}
+	}
+
+	let l = min;
+	let lv = at(min);
+	for (const h of starts) {
+		const hv = at(h);
+		if (maybeSolutionBetween(lv, hv)) {
+			recur(l, h, lv, hv);
+		}
+		l = h;
+		lv = hv;
+	}
+
+	return solutions;
+}
+
 class CurveDrawer {
 	constructor(onBegin, onSegment, onLive, onDone, onCancel, minStep, minError, maxError) {
 		this._onBegin = onBegin;
@@ -1187,28 +1483,25 @@ class CurveDrawer {
 		const p0 = points[0];
 		const pN = points[points.length - 1];
 		const curve = leastSquaresFitCubicFixEnds(points, prevControl, 1, 1);
-		const norm = curve?.normalise();
-		if (!norm?.curve) {
+		if (!curve) {
 			return { curve: new CubicBezier(p0, p0, pN, pN), dist: Number.POSITIVE_INFINITY };
 		}
+		const norm = curve.normalise();
 		let targetNormArea = 0;
-		let targetNormMoment = 0;
 		const targetLength = pN.d - p0.d;
 		let prevPt = norm.fn(p0);
 		for (let i = 1; i < points.length; ++i) {
 			const pt = norm.fn(points[i]);
 			const w = pt.x - prevPt.x;
 			targetNormArea += w * (prevPt.y + pt.y) / 2;
-			targetNormMoment += w * (prevPt.y * prevPt.x + pt.y * pt.x) / 2;
 			prevPt = pt;
 		}
 		const scale = Math.sqrt(norm.scale2);
 		const dArea = (targetNormArea - norm.curve.area()) * scale;
-		const dMoment = (targetNormMoment - norm.curve.moment()) * scale;
 		const dLength = targetLength - curve.lengthEstimate(0.01 * scale).best;
 		return {
 			curve,
-			dist: dArea * dArea + dMoment * dMoment + dLength * dLength,
+			dist: dArea * dArea + dLength * dLength,
 		};
 	}
 
@@ -1457,18 +1750,29 @@ function mkSVG(type, attrs = {}, children = []) {
 })();
 
 (() => {
+	const circlePos = { x: 0.5, y: 0.5 };
+	const circleR = 0.2;
+	const thickLine = new Line({ x: 0.3, y: 0.7 }, { x: 0.9, y: 0.5 });
+	const thickLineWidth = 0.1;
+
+	const thickLineDev = ptMul(thickLine.normal(), thickLineWidth * 0.5);
+
 	const pathCtl = mkSVG('path', { 'class': 'ctl' });
 	const pathCurve = mkSVG('path', { 'class': 'curve' });
 	const pathSplits = mkSVG('path', { 'class': 'split' });
+	const pathIntersections = mkSVG('path', { 'class': 'intersections' });
 	const svg = mkSVG('svg', {
 		version: '1.1',
 		viewBox: '0 0 1 1',
 		width: 500,
 		height: 500,
 	}, [
+		mkSVG('circle', { 'class': 'intersection-shape', cx: circlePos.x, cy: circlePos.y, r: circleR }),
+		mkSVG('path', { 'class': 'intersection-shape', d: `M${ptSVG(ptAdd(thickLine.p0, thickLineDev))}L${ptSVG(ptAdd(thickLine.p1, thickLineDev))} ${ptSVG(ptSub(thickLine.p1, thickLineDev))} ${ptSVG(ptSub(thickLine.p0, thickLineDev))}Z` }),
 		pathCtl,
 		pathCurve,
 		pathSplits,
+		pathIntersections,
 	]);
 	const dc0 = mk('div', { 'class': 'ctl end' });
 	const dc1 = mk('div', { 'class': 'ctl mid' });
@@ -1487,9 +1791,6 @@ function mkSVG(type, attrs = {}, children = []) {
 		pathCurve.setAttribute('d', bezier.toSVGPath());
 
 		const norm = bezier.normalise();
-		if (!norm.curve) {
-			return; // TODO
-		}
 		const normBezier = norm.curve;
 
 		const curveInflectionTs = normBezier.inflectionTs();
@@ -1501,6 +1802,15 @@ function mkSVG(type, attrs = {}, children = []) {
 			.sort();
 
 		pathSplits.setAttribute('d', splits.map((t) => `M${ptSVG(bezier.at(t))}v0.001`).join(''));
+
+		const intersectionsCircle = bezier.tsOnCircle(
+			circlePos,
+			circleR * circleR,
+			1e-2,
+		);
+		const intersectionsLine = bezier.tsOnThickLine(thickLine, thickLineWidth);
+		const intersections = [...intersectionsCircle, ...intersectionsLine];
+		pathIntersections.setAttribute('d', intersections.map(([t]) => `M${ptSVG(bezier.at(t))}v0.001`).join(''));
 
 		const curveArea = normBezier.area();
 		const curveMoment = normBezier.moment();

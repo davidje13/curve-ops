@@ -2,21 +2,19 @@ import type { AxisAlignedBox } from './AxisAlignedBox.mts';
 import type { Circle } from './Circle.mts';
 import {
 	bezier3Bounds,
+	bezier3Derivative,
 	bezier3TsAtXEq,
 	bezier3TsAtYEq,
 	bezier3XAt,
 	bezier3YAt,
 	type CubicBezier,
 } from './CubicBezier.mts';
-import {
-	lineScaledNormalisation,
-	lineUnscaledNormalisation,
-	type Line,
-} from './Line.mts';
+import { lineScaledNormalisation, type Line } from './Line.mts';
 import { bezier3Normalise } from './NormalisedCubicBezier.mts';
 import type { Rectangle } from './Rectangle.mjs';
 import { ptAdd, ptDot, ptLen2, type Pt } from './Pt.mts';
 import { solveO6 } from './roots.mts';
+import { bezier2XAt, bezier2YAt } from './QuadraticBezier.mts';
 
 export const testIntersectAABoxCircle = /*@__PURE__*/ (
 	aaBox: AxisAlignedBox,
@@ -61,47 +59,46 @@ function testIntersectAABoxCircleR2(
 	return r;
 }
 
-// TODO: add sign of derivative (entering/exiting line)
 /*@__PURE__*/ export function intersectBezier3Rect(
 	{ p0, c1, c2, p3 }: CubicBezier,
 	{ c, d, aspect }: Rectangle,
-): { t1: number }[] {
-	const norm = lineUnscaledNormalisation({
-		p0: c,
-		p1: ptAdd(c, d),
-	});
+): { t1: number; d1: Sign }[] {
+	const norm = lineScaledNormalisation({ p0: c, p1: ptAdd(c, d) });
+	if (!norm) {
+		return [];
+	}
 	const curve = {
 		p0: norm.fn(p0),
 		c1: norm.fn(c1),
 		c2: norm.fn(c2),
 		p3: norm.fn(p3),
 	};
-	const rx = norm.l * 0.5;
-	const ry = rx * aspect;
+	const grad = bezier3Derivative(curve);
+	const ry = 0.5 * aspect;
 
-	const r: { t1: number }[] = [];
+	const r: { t1: number; d1: Sign }[] = [];
 	for (const t1 of bezier3TsAtYEq(curve, -ry)) {
 		const x = bezier3XAt(curve, t1);
-		if (t1 >= 0 && t1 <= 1 && x >= -rx && x <= rx) {
-			r.push({ t1 });
+		if (t1 >= 0 && t1 <= 1 && x >= -0.5 && x <= 0.5) {
+			r.push({ t1, d1: sign(-bezier2YAt(grad, t1)) });
 		}
 	}
 	for (const t1 of bezier3TsAtYEq(curve, ry)) {
 		const x = bezier3XAt(curve, t1);
-		if (t1 >= 0 && t1 <= 1 && x >= -rx && x <= rx) {
-			r.push({ t1 });
+		if (t1 >= 0 && t1 <= 1 && x >= -0.5 && x <= 0.5) {
+			r.push({ t1, d1: sign(bezier2YAt(grad, t1)) });
 		}
 	}
-	for (const t1 of bezier3TsAtXEq(curve, -rx)) {
+	for (const t1 of bezier3TsAtXEq(curve, -0.5)) {
 		const y = bezier3YAt(curve, t1);
 		if (t1 >= 0 && t1 <= 1 && y >= -ry && y <= ry) {
-			r.push({ t1 });
+			r.push({ t1, d1: sign(-bezier2XAt(grad, t1)) });
 		}
 	}
-	for (const t1 of bezier3TsAtXEq(curve, rx)) {
+	for (const t1 of bezier3TsAtXEq(curve, 0.5)) {
 		const y = bezier3YAt(curve, t1);
 		if (t1 >= 0 && t1 <= 1 && y >= -ry && y <= ry) {
-			r.push({ t1 });
+			r.push({ t1, d1: sign(bezier2XAt(grad, t1)) });
 		}
 	}
 	return r;
@@ -132,7 +129,7 @@ export const intersectNBezier3Circle = /*@__PURE__*/ (
 	center: Pt,
 	rad2: number,
 	maxError?: number | undefined,
-) => { t1: number; d1: -1 | 1 }[] {
+) => { t1: number; d1: Sign }[] {
 	const bounds = bezier3Bounds(curve);
 
 	// distance equation:
@@ -173,3 +170,7 @@ export const intersectNBezier3Circle = /*@__PURE__*/ (
 		).map(([t1, d1]) => ({ t1, d1 }));
 	};
 }
+
+type Sign = -1 | 0 | 1;
+
+const sign = (x: number) => Math.sign(x) as Sign;

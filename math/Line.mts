@@ -7,6 +7,7 @@ import {
 	ptMid,
 	ptMul,
 	ptNorm,
+	ptRot90,
 	ptSub,
 	ptSVG,
 	ptTransform,
@@ -28,10 +29,7 @@ export const lineDerivative = /*@__PURE__*/ ({ p0, p1 }: Line) => ptSub(p1, p0);
 export const lineMidpoint = /*@__PURE__*/ ({ p0, p1 }: Line) => ptMid(p0, p1);
 
 export const lineNormal = /*@__PURE__*/ ({ p0, p1 }: Line) =>
-	ptNorm({
-		x: p0.y - p1.y,
-		y: p1.x - p0.x,
-	});
+	ptNorm(ptRot90(ptSub(p1, p0)));
 
 export const lineTranslate = /*@__PURE__*/ (
 	{ p0, p1 }: Line,

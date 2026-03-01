@@ -21,15 +21,22 @@ import {
 } from '../math/NormalisedCubicBezier.mts';
 import { rectFromLine, rectSVG } from '../math/Rectangle.mjs';
 import {
+	PT0,
 	ptDist,
 	ptDist2,
 	ptLerp,
+	ptMad,
+	ptMul,
+	ptNorm,
 	ptPolyline,
+	ptRot90,
+	ptSub,
 	ptSVG,
 	type Pt,
 } from '../math/Pt.mts';
 import { CurveDrawer } from './CurveDrawer.mts';
 import { DragHandler } from './DragHandler.mts';
+import { lineFromPts } from '../math/Line.mts';
 
 (() => {
 	const svg = mkSVG('svg', {
@@ -126,7 +133,7 @@ import { DragHandler } from './DragHandler.mts';
 (() => {
 	const circle = { c: { x: 0.5, y: 0.5 }, r: 0.2 };
 	const box = rectFromLine(
-		{ p0: { x: 0.3, y: 0.7 }, p1: { x: 0.9, y: 0.5 } },
+		lineFromPts({ x: 0.3, y: 0.7 }, { x: 0.9, y: 0.5 }),
 		0.1,
 	);
 
@@ -189,7 +196,12 @@ import { DragHandler } from './DragHandler.mts';
 		pathIntersections.setAttribute(
 			'd',
 			intersections
-				.map(({ t1 }) => `M${ptSVG(bezier3At(bezier, t1))}v0.001`)
+				.map(({ t1, d1 }) => {
+					const pt = bezier3At(bezier, t1);
+					const dir = ptNorm(ptSub(bezier3At(bezier, t1 + d1 * 0.01), pt));
+					const w = ptMul(ptRot90(dir), 0.015);
+					return `M${ptSVG(pt)}l${ptSVG(ptMad(dir, 0.02, ptMul(w, -0.5)))}l${ptSVG(w)}Z`;
+				})
 				.join(''),
 		);
 
@@ -287,11 +299,7 @@ function measureFunction(
 	return sum;
 }
 
-function grabbable(
-	o: HTMLElement,
-	update: () => void,
-	initial: Pt = { x: 0, y: 0 },
-): Pt {
+function grabbable(o: HTMLElement, update: () => void, initial: Pt = PT0): Pt {
 	const r = { ...initial };
 	const draw = () => {
 		o.style.left = `${r.x * 100}%`;

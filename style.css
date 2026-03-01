@@ -44,8 +44,8 @@ body {
 		}
 
 		.intersections {
-			stroke: #00ff00;
-			stroke-width: 5;
+			fill: #ffffff;
+			stroke: #008000;
 		}
 
 		.live {

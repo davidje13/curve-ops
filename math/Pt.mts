@@ -28,8 +28,8 @@ export const PT0: { readonly x: 0; readonly y: 0 } = { x: 0, y: 0 };
 export const ptDot = /*@__PURE__*/ (a: Pt, b: Pt) => a.x * b.x + a.y * b.y;
 export const ptCross = /*@__PURE__*/ (a: Pt, b: Pt) => a.x * b.y - a.y * b.x;
 
-export const ptLen2 = /*@__PURE__*/ (pt: Pt) => pt.x * pt.x + pt.y * pt.y;
-export const ptLen = /*@__PURE__*/ (pt: Pt) => Math.hypot(pt.x, pt.y);
+export const ptLen2 = /*@__PURE__*/ ({ x, y }: Pt) => x * x + y * y;
+export const ptLen = /*@__PURE__*/ ({ x, y }: Pt) => Math.hypot(x, y);
 
 export const ptDist2 = /*@__PURE__*/ (a: Pt, b: Pt) =>
 	(a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
@@ -37,6 +37,7 @@ export const ptDist = /*@__PURE__*/ (a: Pt, b: Pt) =>
 	Math.hypot(a.x - b.x, a.y - b.y);
 
 export const ptNorm = /*@__PURE__*/ (pt: Pt) => ptMul(pt, 1 / ptLen(pt));
+export const ptRot90 = /*@__PURE__*/ ({ x, y }: Pt) => ({ x: -y, y: x });
 
 export const ptAdd = /*@__PURE__*/ (a: Pt, b: Pt) => ({
 	x: a.x + b.x,

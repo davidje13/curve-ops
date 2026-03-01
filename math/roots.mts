@@ -149,7 +149,7 @@
 				recur(mid, h, midv, hv);
 			}
 		} else if (lv.y < 0 !== hv.y < 0) {
-			solutions.push([l + ((h - l) * lv.y) / (lv.y - hv.y), lv.y < 0 ? -1 : 1]);
+			solutions.push([l + ((h - l) * lv.y) / (lv.y - hv.y), lv.y < 0 ? 1 : -1]);
 		}
 	}
 

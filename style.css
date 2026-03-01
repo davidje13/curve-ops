@@ -1,0 +1,94 @@
+body {
+	background: #eeeeee;
+}
+
+.playground {
+	display: inline-block;
+	position: relative;
+	border: 1px solid black;
+	background: white;
+
+	&.draw {
+		touch-action: pinch-zoom;
+		user-select: none;
+	}
+
+	& svg {
+		display: block;
+
+		& path {
+			fill: none;
+			stroke-linecap: round;
+			stroke-linejoin: round;
+			vector-effect: non-scaling-stroke;
+		}
+
+		.ctl {
+			stroke: #cccccc;
+		}
+
+		.curve {
+			fill: #00000011;
+			stroke: black;
+		}
+
+		.intersection-shape {
+			fill: none;
+			stroke: #00800066;
+			vector-effect: non-scaling-stroke;
+		}
+
+		.split {
+			stroke: #ff0000;
+			stroke-width: 5;
+		}
+
+		.intersections {
+			stroke: #00ff00;
+			stroke-width: 5;
+		}
+
+		.live {
+			stroke: #ff0000;
+		}
+
+		.done {
+			stroke: #000000;
+
+			&:nth-child(even) {
+				stroke-width: 2;
+			}
+
+			&.n2 {
+				stroke: #cccc00;
+			}
+
+			&.n3 {
+				stroke: #00cc00;
+			}
+
+			&.n4 {
+				stroke: #cc00cc;
+			}
+		}
+	}
+
+	.ctl {
+		position: absolute;
+		width: 8px;
+		height: 8px;
+		box-sizing: border-box;
+		border: 1px solid black;
+		border-radius: 100%;
+		margin: -4px;
+	}
+	.prev {
+		background: #cc0000;
+	}
+	.end {
+		background: #0000cc;
+	}
+	.mid {
+		background: #00cc00;
+	}
+}

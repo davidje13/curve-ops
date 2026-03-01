@@ -1,0 +1,23 @@
+{
+	"name": "bezier-experiments",
+	"private": true,
+	"scripts": {
+		"format": "prettier --write .",
+		"build": "tsc",
+		"start": "web-listener ."
+	},
+	"dependencies": {
+		"lean-qr": "2.x",
+		"react": "18.x",
+		"react-dom": "18.x",
+		"react-hook-awaited": "1.x",
+		"react-hook-final-countdown": "2.x",
+		"shared-reducer": "6.4.x",
+		"wouter": "3.x"
+	},
+	"devDependencies": {
+		"prettier": "3.8.1",
+		"typescript": "5.9.x",
+		"web-listener": "0.18.1"
+	}
+}

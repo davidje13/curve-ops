@@ -4,6 +4,7 @@ import {
 	bezier3LengthEstimate,
 	bezier3Split,
 	bezier3SVG,
+	bezier3TangentAt,
 	bezier3XTurningPointTs,
 	bezier3YTurningPointTs,
 	type CubicBezier,
@@ -27,10 +28,8 @@ import {
 	ptLerp,
 	ptMad,
 	ptMul,
-	ptNorm,
 	ptPolyline,
 	ptRot90,
-	ptSub,
 	ptSVG,
 	type Pt,
 } from '../math/Pt.mts';
@@ -198,9 +197,9 @@ import { lineFromPts } from '../math/Line.mts';
 			intersections
 				.map(({ t1, d1 }) => {
 					const pt = bezier3At(bezier, t1);
-					const dir = ptNorm(ptSub(bezier3At(bezier, t1 + d1 * 0.01), pt));
-					const w = ptMul(ptRot90(dir), 0.015);
-					return `M${ptSVG(pt)}l${ptSVG(ptMad(dir, 0.02, ptMul(w, -0.5)))}l${ptSVG(w)}Z`;
+					const dir = ptMul(bezier3TangentAt(bezier, t1), d1 * 0.02);
+					const w = ptMul(ptRot90(dir), 0.75);
+					return `M${ptSVG(pt)}l${ptSVG(ptMad(w, -0.5, dir))}l${ptSVG(w)}Z`;
 				})
 				.join(''),
 		);

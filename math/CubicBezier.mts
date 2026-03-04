@@ -8,11 +8,13 @@ import {
 	ptLerp,
 	ptMad,
 	ptMul,
+	ptNorm,
+	ptRot90,
 	ptSub,
 	ptSVG,
 	type Pt,
 } from './Pt.mts';
-import type { QuadraticBezier } from './QuadraticBezier.mts';
+import { bezier2At, type QuadraticBezier } from './QuadraticBezier.mts';
 import { solveCubic, solveQuadratic } from './roots.mts';
 
 export interface CubicBezier {
@@ -88,6 +90,16 @@ export const bezier3Derivative = /*@__PURE__*/ ({
 	c1: ptMul(ptSub(c2, c1), 3),
 	p2: ptMul(ptSub(p3, c2), 3),
 });
+
+export const bezier3TangentAt = /*@__PURE__*/ (
+	curve: CubicBezier,
+	t: number,
+): Pt => ptNorm(bezier2At(bezier3Derivative(curve), t));
+
+export const bezier3NormalAt = /*@__PURE__*/ (
+	curve: CubicBezier,
+	t: number,
+): Pt => ptRot90(ptNorm(bezier2At(bezier3Derivative(curve), t)));
 
 export const bezier3Translate = /*@__PURE__*/ (
 	{ p0, c1, c2, p3 }: CubicBezier,

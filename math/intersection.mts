@@ -16,12 +16,12 @@ import { ptAdd, ptDot, ptLen2, type Pt } from './Pt.mts';
 import { solveO6 } from './roots.mts';
 import { bezier2XAt, bezier2YAt } from './QuadraticBezier.mts';
 
-export const testIntersectAABoxCircle = /*@__PURE__*/ (
+export const isOverlapAABoxCircle = /*@__PURE__*/ (
 	aaBox: AxisAlignedBox,
 	{ c, r }: Circle,
-) => testIntersectAABoxCircleR2(aaBox, c, r * r);
+) => isOverlapAABoxCircleR2(aaBox, c, r * r);
 
-function testIntersectAABoxCircleR2(
+function isOverlapAABoxCircleR2(
 	{ l, h }: AxisAlignedBox,
 	c: Pt,
 	r2: number,
@@ -151,7 +151,7 @@ export const intersectNBezier3Circle = /*@__PURE__*/ (
 	const f3 = -4 * a + b;
 
 	return (center, rad2, maxError) => {
-		if (!testIntersectAABoxCircleR2(bounds, center, rad2)) {
+		if (!isOverlapAABoxCircleR2(bounds, center, rad2)) {
 			return [];
 		}
 		const c1c = ptDot(c1, center) * 6;

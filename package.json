@@ -3,8 +3,7 @@
 	"private": true,
 	"scripts": {
 		"format": "prettier --write .",
-		"build": "tsc",
-		"start": "web-listener ."
+		"start": "web-listener . --exec 'tsc -w'"
 	},
 	"dependencies": {
 		"lean-qr": "2.x",
@@ -18,6 +17,6 @@
 	"devDependencies": {
 		"prettier": "3.8.1",
 		"typescript": "5.9.x",
-		"web-listener": "0.18.1"
+		"web-listener": "0.19.0"
 	}
 }

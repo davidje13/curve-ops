@@ -10,7 +10,6 @@ Mostly based on <https://pomax.github.io/bezierinfo/> and
 
 ```sh
 npm install
-npm run build
 npm start
 ```
 

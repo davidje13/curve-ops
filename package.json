@@ -25,7 +25,14 @@
 		"start": "web-listener . --exec 'tsc -w --outDir ./dev-build'",
 		"dopublish": "package/build.sh && npm publish package.tgz"
 	},
-	"dependencies": {},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/davidje13/curve-ops.git"
+	},
+	"bugs": {
+		"url": "https://github.com/davidje13/curve-ops/issues"
+	},
+	"homepage": "https://github.com/davidje13/curve-ops#readme",
 	"devDependencies": {
 		"@rollup/plugin-node-resolve": "16.x",
 		"@rollup/plugin-terser": "0.4.x",

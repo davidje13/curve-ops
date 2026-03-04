@@ -24,14 +24,14 @@ export interface CubicBezier {
 	readonly p3: Pt;
 }
 
-export const bezier3FromPts = /*@__PURE__*/ (
+export const bezier3FromPts = (
 	p0: Pt,
 	c1: Pt,
 	c2: Pt,
 	p3: Pt,
 ): CubicBezier => ({ p0, c1, c2, p3 });
 
-export const bezier3FromBezier2 = /*@__PURE__*/ ({
+export const bezier3FromBezier2 = ({
 	p0,
 	c1,
 	p2,
@@ -42,20 +42,14 @@ export const bezier3FromBezier2 = /*@__PURE__*/ ({
 	p3: p2,
 });
 
-export const bezier3FromLine = /*@__PURE__*/ ({
-	p0,
-	p1,
-}: Line): CubicBezier => ({
+export const bezier3FromLine = ({ p0, p1 }: Line): CubicBezier => ({
 	p0: p0,
 	c1: ptLerp(p0, p1, 1 / 3),
 	c2: ptLerp(p0, p1, 2 / 3),
 	p3: p1,
 });
 
-/*@__PURE__*/ export function bezier3At(
-	{ p0, c1, c2, p3 }: CubicBezier,
-	t: number,
-): Pt {
+export function bezier3At({ p0, c1, c2, p3 }: CubicBezier, t: number): Pt {
 	const T = 1 - t;
 	return ptMad(
 		ptMad(p0, T * T, ptMad(c1, 3 * t * T, ptMul(c2, 3 * t * t))),
@@ -64,23 +58,17 @@ export const bezier3FromLine = /*@__PURE__*/ ({
 	);
 }
 
-/*@__PURE__*/ export function bezier3XAt(
-	{ p0, c1, c2, p3 }: CubicBezier,
-	t: number,
-): number {
+export function bezier3XAt({ p0, c1, c2, p3 }: CubicBezier, t: number): number {
 	const T = 1 - t;
 	return p0.x * T * T * T + (3 * T * (c1.x * T + c2.x * t) + p3.x * t * t) * t;
 }
 
-/*@__PURE__*/ export function bezier3YAt(
-	{ p0, c1, c2, p3 }: CubicBezier,
-	t: number,
-): number {
+export function bezier3YAt({ p0, c1, c2, p3 }: CubicBezier, t: number): number {
 	const T = 1 - t;
 	return p0.y * T * T * T + (3 * T * (c1.y * T + c2.y * t) + p3.y * t * t) * t;
 }
 
-export const bezier3Derivative = /*@__PURE__*/ ({
+export const bezier3Derivative = ({
 	p0,
 	c1,
 	c2,
@@ -91,17 +79,13 @@ export const bezier3Derivative = /*@__PURE__*/ ({
 	p2: ptMul(ptSub(p3, c2), 3),
 });
 
-export const bezier3TangentAt = /*@__PURE__*/ (
-	curve: CubicBezier,
-	t: number,
-): Pt => ptNorm(bezier2At(bezier3Derivative(curve), t));
+export const bezier3TangentAt = (curve: CubicBezier, t: number): Pt =>
+	ptNorm(bezier2At(bezier3Derivative(curve), t));
 
-export const bezier3NormalAt = /*@__PURE__*/ (
-	curve: CubicBezier,
-	t: number,
-): Pt => ptRot90(ptNorm(bezier2At(bezier3Derivative(curve), t)));
+export const bezier3NormalAt = (curve: CubicBezier, t: number): Pt =>
+	ptRot90(ptNorm(bezier2At(bezier3Derivative(curve), t)));
 
-export const bezier3Translate = /*@__PURE__*/ (
+export const bezier3Translate = (
 	{ p0, c1, c2, p3 }: CubicBezier,
 	shift: Pt,
 ): CubicBezier => ({
@@ -111,10 +95,7 @@ export const bezier3Translate = /*@__PURE__*/ (
 	p3: ptAdd(p3, shift),
 });
 
-/*@__PURE__*/ export function bezier3TsAtXEq(
-	{ p0, c1, c2, p3 }: CubicBezier,
-	x: number,
-) {
+export function bezier3TsAtXEq({ p0, c1, c2, p3 }: CubicBezier, x: number) {
 	return solveCubic(
 		p3.x - p0.x + 3 * (c1.x - c2.x),
 		3 * (p0.x + c2.x) - 6 * c1.x,
@@ -123,10 +104,7 @@ export const bezier3Translate = /*@__PURE__*/ (
 	);
 }
 
-/*@__PURE__*/ export function bezier3TsAtYEq(
-	{ p0, c1, c2, p3 }: CubicBezier,
-	x: number,
-) {
+export function bezier3TsAtYEq({ p0, c1, c2, p3 }: CubicBezier, x: number) {
 	return solveCubic(
 		p3.y - p0.y + 3 * (c1.y - c2.y),
 		3 * (p0.y + c2.y) - 6 * c1.y,
@@ -135,12 +113,7 @@ export const bezier3Translate = /*@__PURE__*/ (
 	);
 }
 
-/*@__PURE__*/ export function bezier3XTurningPointTs({
-	p0,
-	c1,
-	c2,
-	p3,
-}: CubicBezier) {
+export function bezier3XTurningPointTs({ p0, c1, c2, p3 }: CubicBezier) {
 	// thanks, https://pomax.github.io/bezierinfo/#extremities
 	return solveQuadratic(
 		p3.x - p0.x + 3 * (c1.x - c2.x),
@@ -149,12 +122,7 @@ export const bezier3Translate = /*@__PURE__*/ (
 	);
 }
 
-/*@__PURE__*/ export function bezier3YTurningPointTs({
-	p0,
-	c1,
-	c2,
-	p3,
-}: CubicBezier) {
+export function bezier3YTurningPointTs({ p0, c1, c2, p3 }: CubicBezier) {
 	// thanks, https://pomax.github.io/bezierinfo/#extremities
 	return solveQuadratic(
 		p3.y - p0.y + 3 * (c1.y - c2.y),
@@ -163,9 +131,7 @@ export const bezier3Translate = /*@__PURE__*/ (
 	);
 }
 
-export const bezier3Bounds = /*@__PURE__*/ (
-	curve: CubicBezier,
-): AxisAlignedBox =>
+export const bezier3Bounds = (curve: CubicBezier): AxisAlignedBox =>
 	aaBoxFromXY(
 		[
 			curve.p0.x,
@@ -183,7 +149,7 @@ export const bezier3Bounds = /*@__PURE__*/ (
 		],
 	);
 
-/*@__PURE__*/ export function bezier3LengthEstimate(
+export function bezier3LengthEstimate(
 	curve: CubicBezier,
 	maxError = Number.POSITIVE_INFINITY,
 	recursionLimit = 10,
@@ -244,7 +210,7 @@ export const bezier3Bounds = /*@__PURE__*/ (
 	return { best: 0.75 * l, maxError: err };
 }
 
-/*@__PURE__*/ export function bezier3Bisect(
+export function bezier3Bisect(
 	curve: CubicBezier,
 	t = 0.5,
 ): [CubicBezier, CubicBezier] {
@@ -261,7 +227,7 @@ export const bezier3Bounds = /*@__PURE__*/ (
 	];
 }
 
-/*@__PURE__*/ export function bezier3Split(
+export function bezier3Split(
 	{ p0, c1, c2, p3 }: CubicBezier,
 	splits: number[],
 	minRange = 1e-6,
@@ -294,7 +260,7 @@ export const bezier3Bounds = /*@__PURE__*/ (
 	return r;
 }
 
-/*@__PURE__*/ export const bezier3SVG = (
+export const bezier3SVG = (
 	curve: CubicBezier,
 	precision?: number | undefined,
 	prefix = 'M',

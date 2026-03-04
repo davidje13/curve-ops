@@ -13,12 +13,7 @@ export interface NormalisedCubicBezier extends CubicBezier {
 	readonly p3: { readonly x: number; readonly y: 0 };
 }
 
-/*@__PURE__*/ export function bezier3Normalise({
-	p0,
-	c1,
-	c2,
-	p3,
-}: CubicBezier): {
+export function bezier3Normalise({ p0, c1, c2, p3 }: CubicBezier): {
 	scale2: number;
 	curve: NormalisedCubicBezier;
 	fn: (pt: Pt) => Pt;
@@ -45,7 +40,7 @@ export interface NormalisedCubicBezier extends CubicBezier {
 	};
 }
 
-/*@__PURE__*/ export function nBezier3At(
+export function nBezier3At(
 	{ c1, c2, p3 }: NormalisedCubicBezier,
 	t: number,
 ): Pt {
@@ -57,7 +52,7 @@ export interface NormalisedCubicBezier extends CubicBezier {
 	);
 }
 
-/*@__PURE__*/ export function nBezier3XAt(
+export function nBezier3XAt(
 	{ c1, c2, p3 }: NormalisedCubicBezier,
 	t: number,
 ): number {
@@ -65,7 +60,7 @@ export interface NormalisedCubicBezier extends CubicBezier {
 	return (3 * T * (c1.x * T + c2.x * t) + p3.x * t * t) * t;
 }
 
-/*@__PURE__*/ export function nBezier3YAt(
+export function nBezier3YAt(
 	{ c1, c2 }: NormalisedCubicBezier,
 	t: number,
 ): number {
@@ -73,7 +68,7 @@ export interface NormalisedCubicBezier extends CubicBezier {
 	return 3 * T * (c1.y * T + c2.y * t) * t;
 }
 
-export const nBezier3Derivative = /*@__PURE__*/ ({
+export const nBezier3Derivative = ({
 	c1,
 	c2,
 	p3,
@@ -83,7 +78,7 @@ export const nBezier3Derivative = /*@__PURE__*/ ({
 	p2: ptMul(ptSub(p3, c2), 3),
 });
 
-/*@__PURE__*/ export function nBezier3Curvature(
+export function nBezier3Curvature(
 	curve: NormalisedCubicBezier,
 ): (t: number) => number {
 	// curve(t) = (dx/dt * d^2(y)/dt^2 - d^2(x)/dt^2 * dy/dt) / ((dx/dt)^2 + (dy/dt)^2)^(3/2)
@@ -97,11 +92,7 @@ export const nBezier3Derivative = /*@__PURE__*/ ({
 	};
 }
 
-/*@__PURE__*/ export function nBezier3InflectionTs({
-	c1,
-	c2,
-	p3,
-}: NormalisedCubicBezier) {
+export function nBezier3InflectionTs({ c1, c2, p3 }: NormalisedCubicBezier) {
 	// thanks, https://pomax.github.io/bezierinfo/
 	// note: curve function is simplified by skipping denominator - this form only used for finding zeros
 	// [scaled] curve(t) = (3*s+2*c1y-c2y)*t^2 + (-3*s-c1y)*t + s
@@ -114,20 +105,12 @@ export const nBezier3Derivative = /*@__PURE__*/ ({
 	);
 }
 
-/*@__PURE__*/ export function nBezier3Area({
-	c1,
-	c2,
-	p3,
-}: NormalisedCubicBezier) {
+export function nBezier3Area({ c1, c2, p3 }: NormalisedCubicBezier) {
 	// thanks, https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html
 	return 0.15 * ((p3.x + c2.x) * c1.y + (2 * p3.x - c1.x) * c2.y);
 }
 
-/*@__PURE__*/ export function nBezier3Moment({
-	c1,
-	c2,
-	p3,
-}: NormalisedCubicBezier) {
+export function nBezier3Moment({ c1, c2, p3 }: NormalisedCubicBezier) {
 	// thanks, https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html
 	const l = p3.x;
 	const x1 = c1.x;

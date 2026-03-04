@@ -8,30 +8,20 @@ export interface Rectangle {
 	readonly aspect: number; // width/height
 }
 
-/*@__PURE__*/ export function rectFromLine(
-	line: Line,
-	width: number,
-): Rectangle {
+export function rectFromLine(line: Line, width: number): Rectangle {
 	const d = lineDerivative(line);
 	return { c: lineMidpoint(line), d, aspect: width / ptLen(d) };
 }
 
-export const rectFromAABox = /*@__PURE__*/ (
-	box: AxisAlignedBox,
-): Rectangle => ({
+export const rectFromAABox = (box: AxisAlignedBox): Rectangle => ({
 	c: aaBoxMidpoint(box),
 	d: { x: 0, y: box.h.y - box.l.y },
 	aspect: (box.h.x - box.l.x) / (box.h.y - box.l.y),
 });
 
-export const rectArea = /*@__PURE__*/ ({ d, aspect }: Rectangle) =>
-	ptLen2(d) * aspect;
+export const rectArea = ({ d, aspect }: Rectangle) => ptLen2(d) * aspect;
 
-/*@__PURE__*/ export function rectBounds({
-	c,
-	d,
-	aspect,
-}: Rectangle): AxisAlignedBox {
+export function rectBounds({ c, d, aspect }: Rectangle): AxisAlignedBox {
 	const dx = Math.abs(d.x);
 	const dy = Math.abs(d.y);
 	const hw = (dx + dy * aspect) * 0.5;
@@ -42,7 +32,7 @@ export const rectArea = /*@__PURE__*/ ({ d, aspect }: Rectangle) =>
 	};
 }
 
-/*@__PURE__*/ export function rectSVG(
+export function rectSVG(
 	{ c, d, aspect }: Rectangle,
 	precision?: number | undefined,
 ) {

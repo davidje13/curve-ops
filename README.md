@@ -1,16 +1,46 @@
-# Bezier Experiments
+# Curve Ops
 
-Various bezier-related functions, as well as related vector and
-matrix operations and equation solvers.
+A collection of mathematical utilities for working with curves (primarily Bézier
+curves). This is designed for vector drawing tools, but also exposes various
+underlying abilities such as matrix operations which may be useful elsewhere.
 
-Mostly based on <https://pomax.github.io/bezierinfo/> and
-<https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html>.
+This library is dependency free and designed to work with tree shaking (dead
+code removal) for minimal deployed code size.
 
-## Running
+## Features
+
+- 2D point / vector operations
+- Type-safe matrix operations
+  - multiplication
+  - inversion (up to size 4x4)
+- Polynomial root finding (1st, 2nd, 3rd, and 6th order)
+- Various shapes
+  - Axis-Aligned Bounding Boxes
+  - Rectangles
+  - Circles
+  - Lines (line segments)
+  - Quadratic Béziers
+  - Cubic Béziers
+- Shape overlap detection
+- Shape intersection
+- Least squares curve fitting with optional fixed endpoints and direction
+
+## Installing
 
 ```sh
-npm install
-npm start
+npm install --save curve-ops
 ```
 
-Note: use `npm run build -- -w` to build in watch mode.
+## Usage
+
+TODO
+
+## References
+
+Many of the Bézier capabilities in this library are based on the following
+sources:
+
+- <https://pomax.github.io/bezierinfo/>
+- <https://raphlinus.github.io/>
+  - <https://raphlinus.github.io/curves/2018/12/28/bezier-arclength.html>
+  - <https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html>

@@ -16,10 +16,8 @@ import { ptAdd, ptDot, ptLen2, type Pt } from './Pt.mts';
 import { solveO6 } from './roots.mts';
 import { bezier2XAt, bezier2YAt } from './QuadraticBezier.mts';
 
-export const isOverlapAABoxCircle = /*@__PURE__*/ (
-	aaBox: AxisAlignedBox,
-	{ c, r }: Circle,
-) => isOverlapAABoxCircleR2(aaBox, c, r * r);
+export const isOverlapAABoxCircle = (aaBox: AxisAlignedBox, { c, r }: Circle) =>
+	isOverlapAABoxCircleR2(aaBox, c, r * r);
 
 function isOverlapAABoxCircleR2(
 	{ l, h }: AxisAlignedBox,
@@ -31,7 +29,7 @@ function isOverlapAABoxCircleR2(
 	return dx * dx + dy * dy <= r2;
 }
 
-/*@__PURE__*/ export function intersectBezier3Line(
+export function intersectBezier3Line(
 	{ p0, c1, c2, p3 }: CubicBezier,
 	line: Line,
 ): { t1: number; t2: number }[] {
@@ -59,7 +57,7 @@ function isOverlapAABoxCircleR2(
 	return r;
 }
 
-/*@__PURE__*/ export function intersectBezier3Rect(
+export function intersectBezier3Rect(
 	{ p0, c1, c2, p3 }: CubicBezier,
 	{ c, d, aspect }: Rectangle,
 ): { t1: number; d1: Sign }[] {
@@ -104,26 +102,26 @@ function isOverlapAABoxCircleR2(
 	return r;
 }
 
-export const intersectBezier3Circle = /*@__PURE__*/ (
+export const intersectBezier3Circle = (
 	curve: CubicBezier,
 	circle: Circle,
 	maxError?: number | undefined,
 ) => intersectBezier3CircleFn(curve)(circle.c, circle.r * circle.r, maxError);
 
-/*@__PURE__*/ export function intersectBezier3CircleFn(curve: CubicBezier) {
+export function intersectBezier3CircleFn(curve: CubicBezier) {
 	const norm = bezier3Normalise(curve);
 	const normed = intersectNBezier3CircleFn(norm.curve);
 	return (center: Pt, rad2: number, maxError?: number | undefined) =>
 		normed(norm.fn(center), rad2 / norm.scale2, maxError);
 }
 
-export const intersectNBezier3Circle = /*@__PURE__*/ (
+export const intersectNBezier3Circle = (
 	curve: CubicBezier,
 	circle: Circle,
 	maxError?: number | undefined,
 ) => intersectNBezier3CircleFn(curve)(circle.c, circle.r * circle.r, maxError);
 
-/*@__PURE__*/ export function intersectNBezier3CircleFn(
+export function intersectNBezier3CircleFn(
 	curve: CubicBezier,
 ): (
 	center: Pt,

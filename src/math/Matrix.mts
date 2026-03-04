@@ -6,7 +6,7 @@ export interface Matrix<M extends number = number, N extends number = number> {
 	readonly n: N; // columns
 }
 
-export const matFrom = /*@__PURE__*/ <const V extends number[][]>(
+export const matFrom = <const V extends number[][]>(
 	...v: V
 ): Matrix<V['length'], V[number]['length']> => ({
 	v: v.flat(),
@@ -14,7 +14,7 @@ export const matFrom = /*@__PURE__*/ <const V extends number[][]>(
 	n: (v[0]?.length ?? 0) as V[number]['length'],
 });
 
-export const matDiag = /*@__PURE__*/ <D extends number[]>(
+export const matDiag = <const D extends number[]>(
 	...diag: D
 ): Matrix<D['length'], D['length']> => {
 	const s = diag.length as D['length'];
@@ -25,7 +25,7 @@ export const matDiag = /*@__PURE__*/ <D extends number[]>(
 	return { v, m: s, n: s };
 };
 
-/*@__PURE__*/ export function matPrint(
+export function matPrint(
 	mat: Matrix | null,
 	precision = 3,
 	width = precision + 5,
@@ -45,7 +45,7 @@ export const matDiag = /*@__PURE__*/ <D extends number[]>(
 	return `[ ${r.join('\n  ')} ] (${m}x${n})`;
 }
 
-/*@__PURE__*/ export function matToPtArray<N extends number>({
+export function matToPtArray<N extends number>({
 	v,
 	m,
 }: Matrix<N, 2>): SizedArray<Pt, N> {
@@ -56,7 +56,7 @@ export const matDiag = /*@__PURE__*/ <D extends number[]>(
 	return r as SizedArray<Pt, N>;
 }
 
-/*@__PURE__*/ export function ptArrayToMat<const T extends Pt[]>(
+export function ptArrayToMat<const T extends Pt[]>(
 	pts: T,
 ): Matrix<T['length'], 2> {
 	const v: number[] = [];
@@ -66,7 +66,7 @@ export const matDiag = /*@__PURE__*/ <D extends number[]>(
 	return { v, m: pts.length, n: 2 };
 }
 
-/*@__PURE__*/ export function arrayToMat<Dim extends number>(
+export function arrayToMat<Dim extends number>(
 	values: number[],
 	dim: Dim,
 ): Matrix<number, Dim> {
@@ -76,7 +76,7 @@ export const matDiag = /*@__PURE__*/ <D extends number[]>(
 	return { v: values, m: values.length / dim, n: dim };
 }
 
-/*@__PURE__*/ export function array2DToMat<const V extends number[][]>(
+export function array2DToMat<const V extends number[][]>(
 	values: V,
 ): Matrix<V['length'], V[number]['length']> {
 	const expanded = values.flat();
@@ -95,7 +95,7 @@ export const fnToMat = <const I extends unknown[], const V extends number[]>(
 	fn: (x: I[number]) => V,
 ): Matrix<I['length'], V['length']> => array2DToMat(values.map(fn));
 
-/*@__PURE__*/ export function matReshape<Dim extends number>(
+export function matReshape<Dim extends number>(
 	{ v, m, n }: Matrix,
 	newN: Dim,
 ): Matrix<number, Dim> {
@@ -106,16 +106,17 @@ export const fnToMat = <const I extends unknown[], const V extends number[]>(
 	return { v, m: total / newN, n: newN };
 }
 
-/*@__PURE__*/ export const matScale = <M extends number, N extends number>(
+export const matScale = <M extends number, N extends number>(
 	{ v, m, n }: Matrix<M, N>,
 	s: number,
 ): Matrix<M, N> => ({ v: v.map((x) => x * s), m, n });
 
-/*@__PURE__*/ export function matMul<
+export function matMul<
 	M extends number,
 	N extends number,
-	S extends number,
->(a: Matrix<M, S>, b: Matrix<S, N>): Matrix<M, N> {
+	S1 extends number,
+	S2 extends S1 = S1,
+>(a: Matrix<M, S1>, b: Matrix<S2, N>): Matrix<M, N> {
 	const m = a.m;
 	const n = b.n;
 	const s = a.n;
@@ -137,11 +138,12 @@ export const fnToMat = <const I extends unknown[], const V extends number[]>(
 	return { v, m, n };
 }
 
-/*@__PURE__*/ export function matMulATransposeB<
+export function matMulATransposeB<
 	M extends number,
 	N extends number,
-	S extends number,
->(aT: Matrix<S, M>, b: Matrix<S, N>): Matrix<M, N> {
+	S1 extends number,
+	S2 extends S1 = S1,
+>(aT: Matrix<S1, M>, b: Matrix<S2, N>): Matrix<M, N> {
 	const m = aT.n;
 	const n = b.n;
 	const s = aT.m;
@@ -163,8 +165,8 @@ export const fnToMat = <const I extends unknown[], const V extends number[]>(
 	return { v, m, n };
 }
 
-/*@__PURE__*/ export function matInv<N extends number>(
-	mat: Matrix<N, N>,
+export function matInv<N extends number>(
+	mat: Matrix<N, NoInfer<N>>,
 ): Matrix<N, N> | null {
 	const s = mat.m;
 	if (s !== mat.n) {
@@ -184,16 +186,14 @@ export const fnToMat = <const I extends unknown[], const V extends number[]>(
 	}
 }
 
-/*@__PURE__*/ export function mat1Inv({
-	v: [v00],
-}: Matrix<1, 1>): Matrix<1, 1> | null {
+export function mat1Inv({ v: [v00] }: Matrix<1, 1>): Matrix<1, 1> | null {
 	if (Math.abs(v00!) < 1e-8) {
 		return null;
 	}
 	return { v: [1 / v00!], m: 1, n: 1 };
 }
 
-/*@__PURE__*/ export function mat2Inv({
+export function mat2Inv({
 	v: [v00, v01, v10, v11],
 }: Matrix<2, 2>): Matrix<2, 2> | null {
 	const det = v00! * v11! - v10! * v01!;
@@ -205,7 +205,7 @@ export const fnToMat = <const I extends unknown[], const V extends number[]>(
 	return { v: [v11! * m, -v10! * m, -v01! * m, v00! * m], m: 2, n: 2 };
 }
 
-/*@__PURE__*/ export function mat3Inv({
+export function mat3Inv({
 	v: [v00, v01, v02, v10, v11, v12, v20, v21, v22],
 }: Matrix<3, 3>): Matrix<3, 3> | null {
 	// thanks, https://en.wikipedia.org/wiki/Inverse_matrix#Inversion_of_3_%C3%97_3_matrices
@@ -237,7 +237,7 @@ export const fnToMat = <const I extends unknown[], const V extends number[]>(
 	};
 }
 
-/*@__PURE__*/ export function mat4Inv({
+export function mat4Inv({
 	v: [
 		v00,
 		v01,

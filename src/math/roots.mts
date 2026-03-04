@@ -1,12 +1,8 @@
-/*@__PURE__*/ export function solveLinear(f1: number, f0: number) {
+export function solveLinear(f1: number, f0: number) {
 	return f1 ? [-f0 / f1] : [];
 }
 
-/*@__PURE__*/ export function solveQuadratic(
-	f2: number,
-	f1: number,
-	f0: number,
-) {
+export function solveQuadratic(f2: number, f1: number, f0: number) {
 	if (!f2) {
 		return solveLinear(f1, f0);
 	}
@@ -22,12 +18,7 @@
 	return [];
 }
 
-/*@__PURE__*/ export function solveCubic(
-	f3: number,
-	f2: number,
-	f1: number,
-	f0: number,
-) {
+export function solveCubic(f3: number, f2: number, f1: number, f0: number) {
 	if (!f3) {
 		return solveQuadratic(f2, f1, f0);
 	}
@@ -61,7 +52,7 @@
 	return [Math.cbrt(root - q) - Math.cbrt(root + q) - s];
 }
 
-/*@__PURE__*/ export function solveO6(
+export function solveO6(
 	f6: number,
 	f5: number,
 	f4: number,

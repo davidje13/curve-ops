@@ -1,7 +1,7 @@
-import type { Pt } from '../math/Pt.mts';
+import type { Pt } from '../index.mts';
 
 export class DragHandler {
-	private declare _state: { id: number; target: HTMLElement } | undefined;
+	declare private _state: { id: number; target: HTMLElement } | undefined;
 
 	constructor(
 		private readonly pointRegion: HTMLElement | SVGElement,

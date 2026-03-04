@@ -20,12 +20,10 @@
 		"noPropertyAccessFromIndexSignature": true,
 		"noUncheckedIndexedAccess": true,
 		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-
-		"outDir": "./build"
+		"noUnusedParameters": true
 	},
 	"typeAcquisition": {
 		"enable": false
 	},
-	"include": ["."]
+	"include": ["src"]
 }

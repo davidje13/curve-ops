@@ -1,1 +1,3 @@
-**/build
+build/
+dev-build/
+package/treeshake/*.output.mjs

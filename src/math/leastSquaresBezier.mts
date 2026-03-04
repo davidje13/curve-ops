@@ -279,13 +279,24 @@ function solve<ND extends number, NP extends number, NT extends number>(
 //	[-1, 3, -3, 1], // p3
 //);
 
-const QUADRATIC_M_INV = matFrom([1, 0, 0], [1, 0.5, 0], [1, 1, 1]);
-const QUADRATIC_M_INV_FIXED_ENDS = matFrom([0.5]);
-const CUBIC_M_INV = matFrom(
+const QUADRATIC_M_INV = /*@__PURE__*/ matFrom(
+	[1, 0, 0],
+	[1, 0.5, 0],
+	[1, 1, 1],
+);
+const QUADRATIC_M_INV_FIXED_ENDS = /*@__PURE__*/ matFrom([0.5]);
+const CUBIC_M_INV = /*@__PURE__*/ matFrom(
 	[1, 0, 0, 0],
 	[1, 1 / 3, 0, 0],
 	[1, 2 / 3, 1 / 3, 0],
 	[1, 1, 1, 1],
 );
-const CUBIC_M_INV_FIXED_ENDS = matFrom([1 / 3, 1 / 3], [1 / 3, 2 / 3]);
-const CUBIC_M_INV_FIXED_ENDS_START_GRAD = matDiag(1 / 3, 1 / 3, 1 / 3);
+const CUBIC_M_INV_FIXED_ENDS = /*@__PURE__*/ matFrom(
+	[1 / 3, 1 / 3],
+	[1 / 3, 2 / 3],
+);
+const CUBIC_M_INV_FIXED_ENDS_START_GRAD = /*@__PURE__*/ matDiag(
+	1 / 3,
+	1 / 3,
+	1 / 3,
+);

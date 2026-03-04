@@ -1,27 +1,23 @@
-import { circleSVG } from '../math/Circle.mts';
 import {
+	type CubicBezier,
+	type Pt,
 	bezier3At,
 	bezier3LengthEstimate,
+	bezier3Normalise,
 	bezier3Split,
 	bezier3SVG,
 	bezier3TangentAt,
 	bezier3XTurningPointTs,
 	bezier3YTurningPointTs,
-	type CubicBezier,
-} from '../math/CubicBezier.mts';
-import {
+	circleSVG,
+	CurveDrawer,
 	intersectBezier3Circle,
 	intersectBezier3Rect,
-} from '../math/intersection.mts';
-import { leastSquaresFitCubicFixEnds } from '../math/leastSquaresBezier.mts';
-import {
-	bezier3Normalise,
+	leastSquaresFitCubicFixEnds,
+	lineFromPts,
 	nBezier3Area,
 	nBezier3InflectionTs,
 	nBezier3Moment,
-} from '../math/NormalisedCubicBezier.mts';
-import { rectFromLine, rectSVG } from '../math/Rectangle.mjs';
-import {
 	PT0,
 	ptDist,
 	ptDist2,
@@ -31,11 +27,10 @@ import {
 	ptPolyline,
 	ptRot90,
 	ptSVG,
-	type Pt,
-} from '../math/Pt.mts';
-import { CurveDrawer } from './CurveDrawer.mts';
+	rectFromLine,
+	rectSVG,
+} from '../index.mts';
 import { DragHandler } from './DragHandler.mts';
-import { lineFromPts } from '../math/Line.mts';
 
 (() => {
 	const svg = mkSVG('svg', {

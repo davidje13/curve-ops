@@ -5,10 +5,7 @@ export interface AxisAlignedBox {
 	readonly h: Pt;
 }
 
-/*@__PURE__*/ export function aaBoxFromXY(
-	x: number[],
-	y: number[],
-): AxisAlignedBox {
+export function aaBoxFromXY(x: number[], y: number[]): AxisAlignedBox {
 	const minX = Math.min(...x);
 	const maxX = Math.max(...x);
 	const minY = Math.min(...y);
@@ -16,13 +13,12 @@ export interface AxisAlignedBox {
 	return { l: { x: minX, y: minY }, h: { x: maxX, y: maxY } };
 }
 
-export const aaBoxMidpoint = /*@__PURE__*/ ({ l, h }: AxisAlignedBox) =>
-	ptMid(l, h);
+export const aaBoxMidpoint = ({ l, h }: AxisAlignedBox) => ptMid(l, h);
 
-export const aaBoxArea = /*@__PURE__*/ ({ l, h }: AxisAlignedBox) =>
+export const aaBoxArea = ({ l, h }: AxisAlignedBox) =>
 	(h.x - l.x) * (h.y - l.y);
 
-export const aaBoxSVG = /*@__PURE__*/ (
+export const aaBoxSVG = (
 	{ l, h }: AxisAlignedBox,
 	precision?: number | undefined,
 ) => `M${ptSVG(l, precision)}H${h.x}V${h.y}H${l.x}Z`;

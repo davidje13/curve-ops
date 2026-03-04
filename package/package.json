@@ -1,0 +1,11 @@
+{
+	"name": "curve-ops-package-test",
+	"private": true,
+	"scripts": {
+		"test": "./commonjs.cjs && ./es6modules.mjs && tsc --noEmit && ./treeshake/run.sh"
+	},
+	"devDependencies": {
+		"typescript": "5.9.x",
+		"curve-ops": "file:curve-ops.tgz"
+	}
+}

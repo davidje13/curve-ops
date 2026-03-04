@@ -17,55 +17,39 @@ export interface QuadraticBezier {
 	readonly p2: Pt;
 }
 
-export const bezier2FromPts = /*@__PURE__*/ (
-	p0: Pt,
-	c1: Pt,
-	p2: Pt,
-): QuadraticBezier => ({ p0, c1, p2 });
-
-export const bezier2FromLine = /*@__PURE__*/ ({
+export const bezier2FromPts = (p0: Pt, c1: Pt, p2: Pt): QuadraticBezier => ({
 	p0,
-	p1,
-}: Line): QuadraticBezier => ({
+	c1,
+	p2,
+});
+
+export const bezier2FromLine = ({ p0, p1 }: Line): QuadraticBezier => ({
 	p0: p0,
 	c1: ptMid(p0, p1),
 	p2: p1,
 });
 
-/*@__PURE__*/ export function bezier2At(
-	{ p0, c1, p2 }: QuadraticBezier,
-	t: number,
-): Pt {
+export function bezier2At({ p0, c1, p2 }: QuadraticBezier, t: number): Pt {
 	const T = 1 - t;
 	return ptMad(ptMad(p0, T, ptMul(c1, 2 * t)), T, ptMul(p2, t * t));
 }
 
-/*@__PURE__*/ export function bezier2XAt(
-	{ p0, c1, p2 }: QuadraticBezier,
-	t: number,
-): number {
+export function bezier2XAt({ p0, c1, p2 }: QuadraticBezier, t: number): number {
 	const T = 1 - t;
 	return p0.x * T * T + (2 * c1.x * T + p2.x * t) * t;
 }
 
-/*@__PURE__*/ export function bezier2YAt(
-	{ p0, c1, p2 }: QuadraticBezier,
-	t: number,
-): number {
+export function bezier2YAt({ p0, c1, p2 }: QuadraticBezier, t: number): number {
 	const T = 1 - t;
 	return p0.y * T * T + (2 * c1.y * T + p2.y * t) * t;
 }
 
-export const bezier2Derivative = /*@__PURE__*/ ({
-	p0,
-	c1,
-	p2,
-}: QuadraticBezier): Line => ({
+export const bezier2Derivative = ({ p0, c1, p2 }: QuadraticBezier): Line => ({
 	p0: ptSub(c1, p0),
 	p1: ptSub(p2, c1),
 });
 
-export const bezier2Translate = /*@__PURE__*/ (
+export const bezier2Translate = (
 	{ p0, c1, p2 }: QuadraticBezier,
 	shift: Pt,
 ): QuadraticBezier => ({
@@ -74,7 +58,7 @@ export const bezier2Translate = /*@__PURE__*/ (
 	p2: ptAdd(p2, shift),
 });
 
-/*@__PURE__*/ export function bezier2LengthEstimate(
+export function bezier2LengthEstimate(
 	curve: QuadraticBezier,
 	maxError = Number.POSITIVE_INFINITY,
 	recursionLimit = 10,
@@ -103,7 +87,7 @@ export const bezier2Translate = /*@__PURE__*/ (
 	};
 }
 
-/*@__PURE__*/ export function bezier2Bisect(
+export function bezier2Bisect(
 	{ p0, c1, p2 }: QuadraticBezier,
 	t = 0.5,
 ): [QuadraticBezier, QuadraticBezier] {
@@ -117,7 +101,7 @@ export const bezier2Translate = /*@__PURE__*/ (
 	];
 }
 
-/*@__PURE__*/ export function bezier2Split(
+export function bezier2Split(
 	{ p0, c1, p2 }: QuadraticBezier,
 	splits: number[],
 	minRange = 1e-6,
@@ -145,7 +129,7 @@ export const bezier2Translate = /*@__PURE__*/ (
 	return r;
 }
 
-export const bezier2SVG = /*@__PURE__*/ (
+export const bezier2SVG = (
 	{ p0, c1, p2 }: QuadraticBezier,
 	precision?: number | undefined,
 	prefix = 'M',

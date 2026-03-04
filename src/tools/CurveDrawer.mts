@@ -10,11 +10,11 @@ import {
 import { ptDist, type Pt, type PtWithDist } from '../math/Pt.mts';
 
 export class CurveDrawer {
-	private declare _state:
+	declare private _state:
 		| { _live: PtWithDist[]; _prevControl: Pt | null; _best: Fit }
 		| undefined;
-	private declare readonly _minError: number;
-	private declare readonly _maxError: number;
+	declare private readonly _minError: number;
+	declare private readonly _maxError: number;
 
 	constructor(
 		private readonly onBegin: (pt: Pt) => void,

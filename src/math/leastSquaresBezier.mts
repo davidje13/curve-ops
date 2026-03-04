@@ -8,15 +8,17 @@ import {
 	array2DToMat,
 	arrayToMat,
 	fnToMat,
-	matDiag,
+	mat1Inv,
+	mat2Inv,
+	mat3Inv,
+	mat4Inv,
 	matFrom,
-	matInv,
 	matMul,
 	matMulATransposeB,
 	matReshape,
+	matScale,
 	matToPtArray,
 	ptArrayToMat,
-	type Matrix,
 } from './Matrix.mts';
 import {
 	ptAdd,
@@ -58,8 +60,9 @@ export function leastSquaresFitQuadratic(
 			const t = (d - dist0) * distM;
 			return [1, t, t * t];
 		});
-		const C = solve(P, T, QUADRATIC_M_INV);
-		if (C) {
+		const TTinv = mat3Inv(matMulATransposeB(T, T));
+		if (TTinv) {
+			const C = matMul(QUADRATIC_M_INV, matMul(TTinv, matMulATransposeB(T, P)));
 			return bezier2FromPts(...matToPtArray(C));
 		}
 	}
@@ -88,8 +91,9 @@ export function leastSquaresFitCubic(points: PtWithDist[]): CubicBezier | null {
 			return [1, t, tt, tt * t];
 		});
 
-		const C = solve(P, T, CUBIC_M_INV);
-		if (C) {
+		const TTinv = mat4Inv(matMulATransposeB(T, T));
+		if (TTinv) {
+			const C = matMul(CUBIC_M_INV, matMul(TTinv, matMulATransposeB(T, P)));
 			return bezier3FromPts(...matToPtArray(C));
 		}
 	}
@@ -136,17 +140,16 @@ export function leastSquaresFitCubicFixEnds(
 				adjustedPoints.push(ptMad(dN, -ttt, ptSub(pt, p0)));
 				Tv.push([t - tt, t - ttt]);
 			}
-			const P = ptArrayToMat(adjustedPoints);
-			const T = fnToMat(Tv, ([t1, t2]) => {
+			const PP = ptArrayToMat(adjustedPoints);
+			const TT = fnToMat(Tv, ([t1, t2]) => {
 				const t2mt1 = t2 - t1;
 				return [c1n.x * (t1 - t2mt1), t2mt1, 0, c1n.y * (t1 - t2mt1), 0, t2mt1];
 			});
-			const C = solve(
-				matReshape(P, 1),
-				matReshape(T, 3),
-				CUBIC_M_INV_FIXED_ENDS_START_GRAD,
-			);
-			if (C) {
+			const P = matReshape(PP, 1);
+			const T = matReshape(TT, 3);
+			const TTinv = mat3Inv(matMulATransposeB(T, T));
+			if (TTinv) {
+				const C = matScale(matMul(TTinv, matMulATransposeB(T, P)), 1 / 3);
 				const [c1l, c2x, c2y] = C.v;
 				if (c1l! > 0) {
 					return {
@@ -171,8 +174,12 @@ export function leastSquaresFitCubicFixEnds(
 		}
 		const P = ptArrayToMat(adjustedPoints);
 		const T = array2DToMat(Tv);
-		const C = solve(P, T, CUBIC_M_INV_FIXED_ENDS);
-		if (C) {
+		const TTinv = mat2Inv(matMulATransposeB(T, T));
+		if (TTinv) {
+			const C = matMul(
+				CUBIC_M_INV_FIXED_ENDS,
+				matMul(TTinv, matMulATransposeB(T, P)),
+			);
 			const [c1, c2] = matToPtArray(C);
 			return { p0, c1: ptAdd(p0, c1!), c2: ptAdd(p0, c2!), p3: pN };
 		}
@@ -201,14 +208,16 @@ export function leastSquaresFitCubicFixEnds(
 				adjustedPoints.push(ptMad(dN, -tt, ptSub(pt, p0)));
 				Tv.push(t - tt);
 			}
-			const P = ptArrayToMat(adjustedPoints);
-			const T = fnToMat(Tv, (t1) => [c1n.x * t1, c1n.y * t1]);
-			const C = solve(
-				matReshape(P, 1),
-				matReshape(T, 1),
-				QUADRATIC_M_INV_FIXED_ENDS,
-			);
-			if (C) {
+			const PP = ptArrayToMat(adjustedPoints);
+			const TT = fnToMat(Tv, (t1) => [c1n.x * t1, c1n.y * t1]);
+			const P = matReshape(PP, 1);
+			const T = matReshape(TT, 1);
+			const TTinv = mat1Inv(matMulATransposeB(T, T));
+			if (TTinv) {
+				const C = matMul(
+					QUADRATIC_M_INV_FIXED_ENDS,
+					matMul(TTinv, matMulATransposeB(T, P)),
+				);
 				const [c1l] = C.v;
 				if (c1l! > 0) {
 					return bezier3FromBezier2({ p0, c1: ptMad(c1n, c1l!, p0), p2: pN });
@@ -227,8 +236,12 @@ export function leastSquaresFitCubicFixEnds(
 		}
 		const P = ptArrayToMat(adjustedPoints);
 		const T = arrayToMat(Tv, 1);
-		const C = solve(P, T, QUADRATIC_M_INV_FIXED_ENDS);
-		if (C) {
+		const TTinv = mat1Inv(matMulATransposeB(T, T));
+		if (TTinv) {
+			const C = matMul(
+				QUADRATIC_M_INV_FIXED_ENDS,
+				matMul(TTinv, matMulATransposeB(T, P)),
+			);
 			const [c1] = matToPtArray(C);
 			return bezier3FromBezier2({ p0, c1: ptAdd(p0, c1!), p2: pN });
 		}
@@ -256,18 +269,6 @@ export function leastSquaresFitCubicFixEnds(
 // C = constants for curve                            [d+1 x dim]
 
 // C = M^-1 * (trans(T)*T)^-1 * trans(T) * P
-
-function solve<ND extends number, NP extends number, NT extends number>(
-	P: Matrix<NP, ND>,
-	T: NoInfer<Matrix<NP, NT>>,
-	Minv: Matrix<NT, NT>,
-) {
-	const TTinv = matInv(matMulATransposeB(T, T));
-	if (!TTinv) {
-		return null;
-	}
-	return matMul(Minv, matMul(TTinv, matMulATransposeB(T, P)));
-}
 
 //const QUADRATIC_M = matFrom([
 //	[1, 0, 0],
@@ -299,8 +300,3 @@ const CUBIC_M_INV_FIXED_ENDS = /*@__PURE__*/ matFrom([
 	[1 / 3, 1 / 3],
 	[1 / 3, 2 / 3],
 ]);
-const CUBIC_M_INV_FIXED_ENDS_START_GRAD = /*@__PURE__*/ matDiag(
-	1 / 3,
-	1 / 3,
-	1 / 3,
-);

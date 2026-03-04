@@ -76,6 +76,7 @@ export {
 	mat4Inv,
 	matDiag,
 	matFrom,
+	matIdent,
 	matInv,
 	matMul,
 	matMulATransposeB,
@@ -83,6 +84,7 @@ export {
 	matReshape,
 	matScale,
 	matToPtArray,
+	matZero,
 	ptArrayToMat,
 } from './math/Matrix.mts';
 

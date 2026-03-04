@@ -7,12 +7,17 @@ export interface Matrix<M extends number = number, N extends number = number> {
 }
 
 export const matFrom = <const V extends number[][]>(
-	...v: V
+	v: V,
 ): Matrix<V['length'], V[number]['length']> => ({
 	v: v.flat(),
 	m: v.length as V['length'],
 	n: (v[0]?.length ?? 0) as V[number]['length'],
 });
+
+export const matZero = <M extends number, N extends number>(
+	m: M,
+	n: N,
+): Matrix<M, N> => ({ v: new Array<number>(m * n).fill(0), m, n });
 
 export const matDiag = <const D extends number[]>(
 	...diag: D
@@ -21,6 +26,14 @@ export const matDiag = <const D extends number[]>(
 	const v = new Array<number>(s * s).fill(0);
 	for (let i = 0; i < s; ++i) {
 		v[i * (s + 1)] = diag[i]!;
+	}
+	return { v, m: s, n: s };
+};
+
+export const matIdent = <S extends number>(s: S): Matrix<S, S> => {
+	const v = new Array<number>(s * s).fill(0);
+	for (let i = 0; i < s; ++i) {
+		v[i * (s + 1)] = 1;
 	}
 	return { v, m: s, n: s };
 };
@@ -202,7 +215,7 @@ export function mat2Inv({
 	}
 
 	const m = 1 / det;
-	return { v: [v11! * m, -v10! * m, -v01! * m, v00! * m], m: 2, n: 2 };
+	return { v: [v11! * m, -v01! * m, -v10! * m, v00! * m], m: 2, n: 2 };
 }
 
 export function mat3Inv({

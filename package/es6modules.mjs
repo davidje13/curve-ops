@@ -1,7 +1,10 @@
 #!/usr/bin/env -S node --disable-proto=throw --disallow-code-generation-from-strings --force-node-api-uncaught-exceptions-policy --no-addons --pending-deprecation --throw-deprecation --frozen-intrinsics --no-warnings=ExperimentalWarning
 import { matFrom, matMul, matDiag, matPrint } from 'curve-ops';
 
-const matA = matFrom([1, 2], [3, 4]);
+const matA = matFrom([
+	[1, 2],
+	[3, 4],
+]);
 const matB = matDiag(1, 2);
 const matC = matMul(matA, matB);
 if (

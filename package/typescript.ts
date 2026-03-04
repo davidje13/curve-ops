@@ -20,7 +20,11 @@ const assertType =
 
 // checks
 
-const matA = matFrom([1, 2], [3, 4], [5, 6]);
+const matA = matFrom([
+	[1, 2],
+	[3, 4],
+	[5, 6],
+]);
 assertType(matA)<Matrix<3, 2>>();
 // @ts-expect-error
 matInv(matA);

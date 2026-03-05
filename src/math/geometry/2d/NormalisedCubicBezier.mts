@@ -1,12 +1,12 @@
-import { type CubicBezier } from './CubicBezier.mts';
-import { lineAt, lineScaledNormalisation } from './Line.mts';
+import { solveQuadratic } from '../../roots.mts';
+import type { CubicBezier } from './CubicBezier.mts';
+import { lineAt, internalLineScaledNormalisation } from './Line.mts';
 import { PT0, ptCross, ptLen, ptMad, ptMul, ptSub, type Pt } from './Pt.mts';
 import {
 	bezier2At,
 	bezier2Derivative,
 	type QuadraticBezier,
 } from './QuadraticBezier.mts';
-import { solveQuadratic } from './roots.mts';
 
 export interface NormalisedCubicBezier extends CubicBezier {
 	readonly p0: { readonly x: 0; readonly y: 0 };
@@ -19,9 +19,9 @@ export function bezier3Normalise({ p0, c1, c2, p3 }: CubicBezier): {
 	fn: (pt: Pt) => Pt;
 } {
 	const norm =
-		lineScaledNormalisation({ p0, p1: p3 }) ??
-		lineScaledNormalisation({ p0, p1: c1 }) ??
-		lineScaledNormalisation({ p0, p1: c2 });
+		internalLineScaledNormalisation({ p0, p1: p3 }) ??
+		internalLineScaledNormalisation({ p0, p1: c1 }) ??
+		internalLineScaledNormalisation({ p0, p1: c2 });
 	if (!norm) {
 		return {
 			scale2: 1,

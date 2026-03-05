@@ -21,7 +21,7 @@
 	"sideEffects": false,
 	"scripts": {
 		"format": "prettier --write .",
-		"test": "lean-test src --preprocess=tsc --parallel-suites && package/build.sh && package/run.sh && tsc --noEmit && prettier --check .",
+		"test": "lean-test src --preprocess=tsc && package/build.sh && package/run.sh && tsc --noEmit && prettier --check .",
 		"start": "web-listener . --exec 'tsc -w --outDir ./dev-build'",
 		"dopublish": "package/build.sh && npm publish package.tgz"
 	},

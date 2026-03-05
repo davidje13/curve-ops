@@ -232,7 +232,7 @@ import { DragHandler } from './DragHandler.mts';
 				bezier3At.bind(null, bezier),
 				0,
 				1,
-				1e-6,
+				1e6,
 			).toFixed(6)}`,
 			`Moment: ${(curveMoment * scale * scale * scale).toFixed(3)}`,
 		].join('\n');
@@ -279,17 +279,17 @@ function measureFunction(
 	f: (t: number) => Pt,
 	start: number,
 	end: number,
-	step: number,
+	steps: number,
 ) {
 	let sum = 0;
 	let prev = f(start);
-	for (let p = start + step; p < end; p += step) {
+	const range = end - start;
+	for (let i = 1; i <= steps; ++i) {
+		const p = start + range * (i / steps);
 		const pt = f(p);
 		sum += ptDist(pt, prev);
 		prev = pt;
 	}
-	const pt = f(end);
-	sum += ptDist(pt, prev);
 	return sum;
 }
 

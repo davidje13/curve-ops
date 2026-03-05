@@ -4,7 +4,16 @@ export {
 	aaBoxFromXY,
 	aaBoxMidpoint,
 	aaBoxSVG,
-} from './math/AxisAlignedBox.mts';
+} from './math/geometry/2d/AxisAlignedBox.mts';
+
+export {
+	bezier2FromBezier,
+	bezier3FromBezier,
+	bezierFromBezier2,
+	bezierFromBezier3,
+	bezierFromLine,
+	lineFromBezier,
+} from './math/geometry/2d/bezierConversion.mts';
 
 export {
 	type Circle,
@@ -12,7 +21,7 @@ export {
 	circleBounds,
 	circleCircumference,
 	circleSVG,
-} from './math/Circle.mts';
+} from './math/geometry/2d/Circle.mts';
 
 export {
 	type CubicBezier,
@@ -35,7 +44,7 @@ export {
 	bezier3XTurningPointTs,
 	bezier3YAt,
 	bezier3YTurningPointTs,
-} from './math/CubicBezier.mts';
+} from './math/geometry/2d/CubicBezier.mts';
 
 export {
 	intersectBezier3Circle,
@@ -45,13 +54,13 @@ export {
 	intersectNBezier3Circle,
 	intersectNBezier3CircleFn,
 	isOverlapAABoxCircle,
-} from './math/intersection.mts';
+} from './math/geometry/2d/intersection.mts';
 
 export {
 	leastSquaresFitCubic,
 	leastSquaresFitCubicFixEnds,
 	leastSquaresFitQuadratic,
-} from './math/leastSquaresBezier.mts';
+} from './math/geometry/2d/leastSquaresBezier.mts';
 
 export {
 	type Line,
@@ -63,30 +72,7 @@ export {
 	lineNormal,
 	lineSVG,
 	lineTranslate,
-} from './math/Line.mts';
-
-export {
-	type Matrix,
-	array2DToMat,
-	arrayToMat,
-	fnToMat,
-	mat1Inv,
-	mat2Inv,
-	mat3Inv,
-	mat4Inv,
-	matDiag,
-	matFrom,
-	matIdent,
-	matInv,
-	matMul,
-	matMulATransposeB,
-	matPrint,
-	matReshape,
-	matScale,
-	matToPtArray,
-	matZero,
-	ptArrayToMat,
-} from './math/Matrix.mts';
+} from './math/geometry/2d/Line.mts';
 
 export {
 	type NormalisedCubicBezier,
@@ -99,17 +85,25 @@ export {
 	nBezier3Moment,
 	nBezier3XAt,
 	nBezier3YAt,
-} from './math/NormalisedCubicBezier.mts';
+} from './math/geometry/2d/NormalisedCubicBezier.mts';
+
+export {
+	type Polygon,
+	polygonSignedArea,
+} from './math/geometry/2d/Polygon.mts';
 
 export {
 	PT0,
 	type Pt,
 	type PtWithDist,
+	matFromPts,
 	ptAdd,
+	ptAngle,
 	ptCross,
 	ptDist,
 	ptDist2,
 	ptDot,
+	ptFromVec,
 	ptLen,
 	ptLen2,
 	ptLerp,
@@ -118,11 +112,15 @@ export {
 	ptMul,
 	ptNorm,
 	ptPolyline,
+	ptReflect,
 	ptRot90,
 	ptSVG,
+	ptSignedAngle,
 	ptSub,
 	ptTransform,
-} from './math/Pt.mts';
+	ptsFromMat,
+	vecFromPt,
+} from './math/geometry/2d/Pt.mts';
 
 export {
 	type QuadraticBezier,
@@ -137,7 +135,7 @@ export {
 	bezier2Translate,
 	bezier2XAt,
 	bezier2YAt,
-} from './math/QuadraticBezier.mts';
+} from './math/geometry/2d/QuadraticBezier.mts';
 
 export {
 	type Rectangle,
@@ -146,7 +144,114 @@ export {
 	rectFromAABox,
 	rectFromLine,
 	rectSVG,
-} from './math/Rectangle.mts';
+} from './math/geometry/2d/Rectangle.mts';
+
+export { matProjectVec3 } from './math/geometry/3d/projection.mts';
+
+export {
+	matFromEyeTargetUp,
+	matFromRotationBetween,
+	matSkewSymmetricCrossProduct,
+	quatFromRotationAround,
+} from './math/geometry/3d/rotation.mts';
+
+export {
+	type Bezier,
+	bezierAt,
+	bezierAtMulti,
+	bezierBisect,
+	bezierDerivative,
+	bezierElevateOrder,
+	bezierFrenetNormalAt,
+	bezierLowerOrder,
+	bezierM,
+	bezierMInv,
+	bezierNormalAt,
+	bezierOrder,
+	bezierSplit,
+	bezierTangentAt,
+} from './math/geometry/Bezier.mts';
+
+export {
+	type Vector,
+	matFromVecArray,
+	vec2Cross,
+	vec3Cross,
+	vecAdd,
+	vecAngle,
+	vecArrayFromMat,
+	vecDist,
+	vecDist2,
+	vecDot,
+	vecFrom,
+	vecLen,
+	vecLen2,
+	vecLerp,
+	vecMad,
+	vecMid,
+	vecMul,
+	vecNorm,
+	vecReflect,
+	vecSub,
+} from './math/geometry/Vector.mts';
+
+export { binomial } from './math/binomial.mts';
+
+export {
+	MAT1IDENT,
+	MAT2IDENT,
+	MAT2ROT90,
+	MAT3IDENT,
+	MAT4IDENT,
+	type Matrix,
+	internalMatFromFlat,
+	mat1Determinant,
+	mat1Inverse,
+	mat1LeftInverse,
+	mat1RightInverse,
+	mat2Determinant,
+	mat2Inverse,
+	mat2LeftInverse,
+	mat2RightInverse,
+	mat3Determinant,
+	mat3Inverse,
+	mat3LeftInverse,
+	mat3RightInverse,
+	mat4Determinant,
+	mat4Inverse,
+	mat4LeftInverse,
+	mat4RightInverse,
+	matAdd,
+	matBinaryOp,
+	matDeterminant,
+	matFrom,
+	matFromArray,
+	matFromArrayFn,
+	matFromDiag,
+	matIdent,
+	matInverse,
+	matLeftInverse,
+	matLerp,
+	matMid,
+	matMul,
+	matMulABTranspose,
+	matMulATransposeB,
+	matPrint,
+	matReshape,
+	matRightInverse,
+	matScale,
+	matScaleAdd,
+	matSub,
+	matTranspose,
+	matUnaryOp,
+	matZero,
+} from './math/Matrix.mts';
+
+export {
+	type Quaternion,
+	mat3FromQuatNoNorm,
+	mat3FromQuatNorm,
+} from './math/Quaternion.mts';
 
 export {
 	solveLinear,
@@ -156,3 +261,9 @@ export {
 } from './math/roots.mts';
 
 export { CurveDrawer } from './tools/CurveDrawer.mts';
+
+export {
+	type SizedArray,
+	type SizedArrayWithLength,
+	zeros,
+} from './util/SizedArray.mts';

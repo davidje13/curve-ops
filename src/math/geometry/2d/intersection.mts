@@ -1,3 +1,4 @@
+import { solveO6 } from '../../roots.mts';
 import type { AxisAlignedBox } from './AxisAlignedBox.mts';
 import type { Circle } from './Circle.mts';
 import {
@@ -9,11 +10,10 @@ import {
 	bezier3YAt,
 	type CubicBezier,
 } from './CubicBezier.mts';
-import { lineScaledNormalisation, type Line } from './Line.mts';
+import { internalLineScaledNormalisation, type Line } from './Line.mts';
 import { bezier3Normalise } from './NormalisedCubicBezier.mts';
 import type { Rectangle } from './Rectangle.mjs';
 import { ptAdd, ptDot, ptLen2, type Pt } from './Pt.mts';
-import { solveO6 } from './roots.mts';
 import { bezier2XAt, bezier2YAt } from './QuadraticBezier.mts';
 
 export const isOverlapAABoxCircle = (aaBox: AxisAlignedBox, { c, r }: Circle) =>
@@ -34,7 +34,7 @@ export function intersectBezier3Line(
 	line: Line,
 ): { t1: number; t2: number }[] {
 	// thanks, https://pomax.github.io/bezierinfo/#intersections
-	const norm = lineScaledNormalisation(line);
+	const norm = internalLineScaledNormalisation(line);
 	if (!norm) {
 		return [];
 	}
@@ -61,7 +61,7 @@ export function intersectBezier3Rect(
 	{ p0, c1, c2, p3 }: CubicBezier,
 	{ c, d, aspect }: Rectangle,
 ): { t1: number; d1: Sign }[] {
-	const norm = lineScaledNormalisation({ p0: c, p1: ptAdd(c, d) });
+	const norm = internalLineScaledNormalisation({ p0: c, p1: ptAdd(c, d) });
 	if (!norm) {
 		return [];
 	}

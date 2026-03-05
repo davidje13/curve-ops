@@ -1,7 +1,7 @@
 import {
 	matFrom,
 	matIdent,
-	matInv,
+	matInverse,
 	matMul,
 	matMulATransposeB,
 	matPrint,
@@ -101,21 +101,21 @@ describe('matMulATransposeB', () => {
 	});
 });
 
-describe('matInv', () => {
+describe('matInverse', () => {
 	it('leaves identity matrices unchanged', () => {
-		expect(matInv(matIdent(1)), approxEqualsMatrix(matIdent(1)));
-		expect(matInv(matIdent(2)), approxEqualsMatrix(matIdent(2)));
-		expect(matInv(matIdent(3)), approxEqualsMatrix(matIdent(3)));
-		expect(matInv(matIdent(4)), approxEqualsMatrix(matIdent(4)));
+		expect(matInverse(matIdent(1)), approxEqualsMatrix(matIdent(1)));
+		expect(matInverse(matIdent(2)), approxEqualsMatrix(matIdent(2)));
+		expect(matInverse(matIdent(3)), approxEqualsMatrix(matIdent(3)));
+		expect(matInverse(matIdent(4)), approxEqualsMatrix(matIdent(4)));
 	});
 
 	it('returns the inverse of 1x1 matrices', () => {
-		expect(matInv(matFrom([[2]])), approxEqualsMatrix([[0.5]]));
+		expect(matInverse(matFrom([[2]])), approxEqualsMatrix([[0.5]]));
 	});
 
 	it('returns the inverse of 2x2 matrices', () => {
 		expect(
-			matInv(
+			matInverse(
 				matFrom([
 					[-1, 1.5],
 					[1, -1],
@@ -130,7 +130,7 @@ describe('matInv', () => {
 
 	it('returns the inverse of 3x3 matrices', () => {
 		expect(
-			matInv(
+			matInverse(
 				matFrom([
 					[1, 2, 0],
 					[2, 4, 1],
@@ -147,7 +147,7 @@ describe('matInv', () => {
 
 	it('returns the inverse of 4x4 matrices', () => {
 		expect(
-			matInv(
+			matInverse(
 				matFrom([
 					[0.5, 0, 0, 0.5],
 					[0.5, 1, 0, 0],
@@ -165,14 +165,14 @@ describe('matInv', () => {
 	});
 
 	it('returns null if the matrix is not invertable', () => {
-		expect(matInv(matZero(1, 1))).isNull();
-		expect(matInv(matZero(2, 2))).isNull();
-		expect(matInv(matZero(3, 3))).isNull();
-		expect(matInv(matZero(4, 4))).isNull();
+		expect(matInverse(matZero(1, 1))).isNull();
+		expect(matInverse(matZero(2, 2))).isNull();
+		expect(matInverse(matZero(3, 3))).isNull();
+		expect(matInverse(matZero(4, 4))).isNull();
 	});
 
 	it('rejects non-square matrices', () => {
-		expect(() => matInv(matFrom([[1], [0]]) as any)).throws();
+		expect(() => matInverse(matFrom([[1], [0]]) as any)).throws();
 	});
 });
 

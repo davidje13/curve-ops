@@ -61,7 +61,7 @@ export const bezier2Translate = (
 export function bezier2LengthEstimate(
 	curve: QuadraticBezier,
 	maxError = Number.POSITIVE_INFINITY,
-	recursionLimit = 10,
+	recursionLimit = 20,
 ): LengthEstimate {
 	// thanks, Adaptive subdivision and the length and energy of Bézier curves [Jens Gravesen]
 

@@ -36,7 +36,7 @@ export const lineTranslate = ({ p0, p1 }: Line, shift: Pt): Line => ({
 
 export const lineLength = ({ p0, p1 }: Line) => ptDist(p1, p0);
 
-export function lineScaledNormalisation({ p0, p1 }: Line) {
+export function internalLineScaledNormalisation({ p0, p1 }: Line) {
 	const d = ptSub(p1, p0);
 	const scale2 = ptLen2(d);
 	if (!scale2) {
@@ -54,7 +54,7 @@ export function lineScaledNormalisation({ p0, p1 }: Line) {
 	return { scale2, fn };
 }
 
-export function lineUnscaledNormalisation({ p0, p1 }: Line) {
+export function internalLineUnscaledNormalisation({ p0, p1 }: Line) {
 	const d = ptSub(p1, p0);
 	const l = ptLen(d);
 	if (!l) {

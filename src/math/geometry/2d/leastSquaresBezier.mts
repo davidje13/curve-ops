@@ -1,27 +1,26 @@
 import {
+	matFrom,
+	matMul,
+	matReshape,
+	matScale,
+	matFromArray,
+	matFromArrayFn,
+	mat3LeftInverse,
+	mat4LeftInverse,
+	mat2LeftInverse,
+	mat1LeftInverse,
+} from '../../Matrix.mts';
+import { solveCubic, solveQuadratic } from '../../roots.mts';
+import {
 	bezier3FromBezier2,
 	bezier3FromLine,
 	bezier3FromPts,
 	type CubicBezier,
 } from './CubicBezier.mts';
 import {
-	array2DToMat,
-	arrayToMat,
-	fnToMat,
-	mat1Inv,
-	mat2Inv,
-	mat3Inv,
-	mat4Inv,
-	matFrom,
-	matMul,
-	matMulATransposeB,
-	matReshape,
-	matScale,
-	matToPtArray,
-	ptArrayToMat,
-} from './Matrix.mts';
-import {
+	matFromPts,
 	ptAdd,
+	ptsFromMat,
 	ptDist2,
 	ptDot,
 	ptLen,
@@ -38,7 +37,6 @@ import {
 	bezier2FromPts,
 	type QuadraticBezier,
 } from './QuadraticBezier.mts';
-import { solveCubic, solveQuadratic } from './roots.mts';
 
 export function leastSquaresFitQuadratic(
 	points: PtWithDist[],
@@ -55,15 +53,15 @@ export function leastSquaresFitQuadratic(
 	if (points.length >= 3) {
 		const dist0 = p0.d;
 		const distM = 1 / (pN.d - dist0);
-		const P = ptArrayToMat(points);
-		const T = fnToMat(points, ({ d }) => {
+		const P = matFromPts(points);
+		const T = matFromArrayFn(points, ({ d }) => {
 			const t = (d - dist0) * distM;
 			return [1, t, t * t];
 		});
-		const TTinv = mat3Inv(matMulATransposeB(T, T));
+		const TTinv = mat3LeftInverse(T);
 		if (TTinv) {
-			const C = matMul(QUADRATIC_M_INV, matMul(TTinv, matMulATransposeB(T, P)));
-			return bezier2FromPts(...matToPtArray(C));
+			const C = matMul(QUADRATIC_M_INV, matMul(TTinv, P));
+			return bezier2FromPts(...ptsFromMat(C));
 		}
 	}
 
@@ -84,17 +82,17 @@ export function leastSquaresFitCubic(points: PtWithDist[]): CubicBezier | null {
 		const pN = points[points.length - 1]!;
 		const dist0 = p0.d;
 		const distM = 1 / (pN.d - dist0);
-		const P = ptArrayToMat(points);
-		const T = fnToMat(points, ({ d }) => {
+		const P = matFromPts(points);
+		const T = matFromArrayFn(points, ({ d }) => {
 			const t = (d - dist0) * distM;
 			const tt = t * t;
 			return [1, t, tt, tt * t];
 		});
 
-		const TTinv = mat4Inv(matMulATransposeB(T, T));
+		const TTinv = mat4LeftInverse(T);
 		if (TTinv) {
-			const C = matMul(CUBIC_M_INV, matMul(TTinv, matMulATransposeB(T, P)));
-			return bezier3FromPts(...matToPtArray(C));
+			const C = matMul(CUBIC_M_INV, matMul(TTinv, P));
+			return bezier3FromPts(...ptsFromMat(C));
 		}
 	}
 
@@ -140,16 +138,16 @@ export function leastSquaresFitCubicFixEnds(
 				adjustedPoints.push(ptMad(dN, -ttt, ptSub(pt, p0)));
 				Tv.push([t - tt, t - ttt]);
 			}
-			const PP = ptArrayToMat(adjustedPoints);
-			const TT = fnToMat(Tv, ([t1, t2]) => {
+			const PP = matFromPts(adjustedPoints);
+			const TT = matFromArrayFn(Tv, ([t1, t2]) => {
 				const t2mt1 = t2 - t1;
 				return [c1n.x * (t1 - t2mt1), t2mt1, 0, c1n.y * (t1 - t2mt1), 0, t2mt1];
 			});
 			const P = matReshape(PP, 1);
 			const T = matReshape(TT, 3);
-			const TTinv = mat3Inv(matMulATransposeB(T, T));
+			const TTinv = mat3LeftInverse(T);
 			if (TTinv) {
-				const C = matScale(matMul(TTinv, matMulATransposeB(T, P)), 1 / 3);
+				const C = matScale(matMul(TTinv, P), 1 / 3);
 				const [c1l, c2x, c2y] = C.v;
 				if (c1l! > 0) {
 					return {
@@ -172,15 +170,12 @@ export function leastSquaresFitCubicFixEnds(
 			adjustedPoints.push(ptMad(dN, -ttt, ptSub(pt, p0)));
 			Tv.push([t - tt, t - ttt]);
 		}
-		const P = ptArrayToMat(adjustedPoints);
-		const T = array2DToMat(Tv);
-		const TTinv = mat2Inv(matMulATransposeB(T, T));
+		const P = matFromPts(adjustedPoints);
+		const T = matFrom(Tv);
+		const TTinv = mat2LeftInverse(T);
 		if (TTinv) {
-			const C = matMul(
-				CUBIC_M_INV_FIXED_ENDS,
-				matMul(TTinv, matMulATransposeB(T, P)),
-			);
-			const [c1, c2] = matToPtArray(C);
+			const C = matMul(CUBIC_M_INV_FIXED_ENDS, matMul(TTinv, P));
+			const [c1, c2] = ptsFromMat(C);
 			return { p0, c1: ptAdd(p0, c1!), c2: ptAdd(p0, c2!), p3: pN };
 		}
 	}
@@ -208,16 +203,13 @@ export function leastSquaresFitCubicFixEnds(
 				adjustedPoints.push(ptMad(dN, -tt, ptSub(pt, p0)));
 				Tv.push(t - tt);
 			}
-			const PP = ptArrayToMat(adjustedPoints);
-			const TT = fnToMat(Tv, (t1) => [c1n.x * t1, c1n.y * t1]);
+			const PP = matFromPts(adjustedPoints);
+			const TT = matFromArrayFn(Tv, (t1) => [c1n.x * t1, c1n.y * t1]);
 			const P = matReshape(PP, 1);
 			const T = matReshape(TT, 1);
-			const TTinv = mat1Inv(matMulATransposeB(T, T));
+			const TTinv = mat1LeftInverse(T);
 			if (TTinv) {
-				const C = matMul(
-					QUADRATIC_M_INV_FIXED_ENDS,
-					matMul(TTinv, matMulATransposeB(T, P)),
-				);
+				const C = matMul(QUADRATIC_M_INV_FIXED_ENDS, matMul(TTinv, P));
 				const [c1l] = C.v;
 				if (c1l! > 0) {
 					return bezier3FromBezier2({ p0, c1: ptMad(c1n, c1l!, p0), p2: pN });
@@ -234,15 +226,12 @@ export function leastSquaresFitCubicFixEnds(
 			adjustedPoints.push(ptMad(dN, -tt, ptSub(pt, p0)));
 			Tv.push(t - tt);
 		}
-		const P = ptArrayToMat(adjustedPoints);
-		const T = arrayToMat(Tv, 1);
-		const TTinv = mat1Inv(matMulATransposeB(T, T));
+		const P = matFromPts(adjustedPoints);
+		const T = matFromArray(Tv, 1);
+		const TTinv = mat1LeftInverse(T);
 		if (TTinv) {
-			const C = matMul(
-				QUADRATIC_M_INV_FIXED_ENDS,
-				matMul(TTinv, matMulATransposeB(T, P)),
-			);
-			const [c1] = matToPtArray(C);
+			const C = matMul(QUADRATIC_M_INV_FIXED_ENDS, matMul(TTinv, P));
+			const [c1] = ptsFromMat(C);
 			return bezier3FromBezier2({ p0, c1: ptAdd(p0, c1!), p2: pN });
 		}
 	}
@@ -269,20 +258,6 @@ export function leastSquaresFitCubicFixEnds(
 // C = constants for curve                            [d+1 x dim]
 
 // C = M^-1 * (trans(T)*T)^-1 * trans(T) * P
-
-//const QUADRATIC_M = matFrom([
-//	[1, 0, 0],
-//	[-2, 2, 0],
-//	[1, -2, 1],
-//]);
-
-//const CUBIC_M = matFrom([
-//	//1, t, t2, t3
-//	[1, 0, 0, 0], // p0
-//	[-3, 3, 0, 0], // c1
-//	[3, -6, 3, 0], // c2
-//	[-1, 3, -3, 1], // p3
-//]);
 
 const QUADRATIC_M_INV = /*@__PURE__*/ matFrom([
 	[1, 0, 0],

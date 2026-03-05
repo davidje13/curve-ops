@@ -1,9 +1,9 @@
 import {
 	type Matrix,
-	mat3Inv,
-	matDiag,
+	mat3Inverse,
+	matFromDiag,
 	matFrom,
-	matInv,
+	matInverse,
 	matMul,
 } from 'curve-ops';
 
@@ -27,15 +27,15 @@ const matA = matFrom([
 ]);
 assertType(matA)<Matrix<3, 2>>();
 // @ts-expect-error
-matInv(matA);
+matInverse(matA);
 // @ts-expect-error
-mat2Inv(matA);
+mat2Inverse(matA);
 // @ts-expect-error
-mat3Inv(matA);
+mat3Inverse(matA);
 
-const matB = matDiag(1, 2, 3);
+const matB = matFromDiag([1, 2, 3]);
 assertType(matB)<Matrix<3, 3>>();
-assertType(mat3Inv(matB))<Matrix<3, 3> | null>();
+assertType(mat3Inverse(matB))<Matrix<3, 3> | null>();
 
 assertType(matMul(matB, matA))<Matrix<3, 2>>();
 

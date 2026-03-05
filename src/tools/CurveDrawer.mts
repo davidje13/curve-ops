@@ -1,13 +1,13 @@
 import {
 	bezier3LengthEstimate,
 	type CubicBezier,
-} from '../math/CubicBezier.mts';
-import { leastSquaresFitCubicFixEnds } from '../math/leastSquaresBezier.mts';
+} from '../math/geometry/2d/CubicBezier.mts';
+import { leastSquaresFitCubicFixEnds } from '../math/geometry/2d/leastSquaresBezier.mts';
 import {
 	bezier3Normalise,
 	nBezier3Area,
-} from '../math/NormalisedCubicBezier.mts';
-import { ptDist, type Pt, type PtWithDist } from '../math/Pt.mts';
+} from '../math/geometry/2d/NormalisedCubicBezier.mts';
+import { ptDist, type Pt, type PtWithDist } from '../math/geometry/2d/Pt.mts';
 
 export class CurveDrawer {
 	declare private _state:

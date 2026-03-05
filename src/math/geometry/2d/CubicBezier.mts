@@ -1,3 +1,4 @@
+import { solveCubic, solveQuadratic } from '../../roots.mts';
 import { aaBoxFromXY, type AxisAlignedBox } from './AxisAlignedBox.mts';
 import type { Line } from './Line.mts';
 import {
@@ -15,7 +16,6 @@ import {
 	type Pt,
 } from './Pt.mts';
 import { bezier2At, type QuadraticBezier } from './QuadraticBezier.mts';
-import { solveCubic, solveQuadratic } from './roots.mts';
 
 export interface CubicBezier {
 	readonly p0: Pt;
@@ -83,7 +83,7 @@ export const bezier3TangentAt = (curve: CubicBezier, t: number): Pt =>
 	ptNorm(bezier2At(bezier3Derivative(curve), t));
 
 export const bezier3NormalAt = (curve: CubicBezier, t: number): Pt =>
-	ptRot90(ptNorm(bezier2At(bezier3Derivative(curve), t)));
+	ptRot90(bezier3TangentAt(curve, t));
 
 export const bezier3Translate = (
 	{ p0, c1, c2, p3 }: CubicBezier,

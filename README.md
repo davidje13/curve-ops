@@ -9,21 +9,25 @@ code removal) for minimal deployed code size.
 
 ## Features
 
-- 2D point / vector operations
-- Type-safe matrix operations
-  - multiplication
-  - inversion (up to size 4x4)
-- Polynomial root finding (1st, 2nd, 3rd, and 6th order)
 - Various shapes
   - Axis-Aligned Bounding Boxes
   - Rectangles
   - Circles
   - Lines (line segments)
-  - Quadratic Béziers
-  - Cubic Béziers
+  - Béziers
+    - any degree, any dimension
+    - optimisations and extra features for 2D quadratic and cubic Béziers
 - Shape overlap detection
 - Shape intersection
-- Least squares curve fitting with optional fixed endpoints and direction
+- Least squares curve fitting
+  - optional fixed endpoints and direction
+- n-D point / vector operations (with optimised versions for 2D)
+- Type-safe matrix operations
+  - multiplication
+  - inversion (up to size 4x4)
+  - optimised implementations for 1x1, 2x2, 3x3, and 4x4 matrices
+- Quaternion rotation conversions
+- Polynomial root finding (1st, 2nd, 3rd, and 6th order)
 
 ## Installing
 

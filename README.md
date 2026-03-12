@@ -23,11 +23,14 @@ code removal) for minimal deployed code size.
   - optional fixed endpoints and direction
 - n-D point / vector operations (with optimised versions for 2D)
 - Type-safe matrix operations
-  - multiplication
+  - multiplication / addition / subtraction / etc.
   - inversion (up to size 4x4)
   - optimised implementations for 1x1, 2x2, 3x3, and 4x4 matrices
 - Quaternion rotation conversions
-- Polynomial root finding (1st, 2nd, 3rd, and 6th order)
+- Polynomials
+  - integration / differentiation
+  - multiplication / addition / subtraction / etc.
+  - root finding (1st, 2nd, 3rd, and 6th order)
 
 ## Installing
 

@@ -1,4 +1,8 @@
-import { solveLinear, solveQuadratic } from '../../roots.mts';
+import {
+	polynomial2Roots,
+	polynomial3Roots,
+	type Polynomial,
+} from '../../Polynomial.mts';
 import { aaBoxFromXY, type AxisAlignedBox } from './AxisAlignedBox.mts';
 import {
 	internalLineScaledNormalisation,
@@ -55,6 +59,26 @@ export function bezier2YAt({ p0, c1, p2 }: QuadraticBezier, t: number): number {
 	return p0.y * T * T + (2 * c1.y * T + p2.y * t) * t;
 }
 
+export const bezier2PolynomialX = ({
+	p0,
+	c1,
+	p2,
+}: QuadraticBezier): Polynomial<3> => [
+	p0.x,
+	2 * (c1.x - p0.x),
+	p0.x - 2 * c1.x + p2.x,
+];
+
+export const bezier2PolynomialY = ({
+	p0,
+	c1,
+	p2,
+}: QuadraticBezier): Polynomial<3> => [
+	p0.y,
+	2 * (c1.y - p0.y),
+	p0.y - 2 * c1.y + p2.y,
+];
+
 export const bezier2Derivative = ({
 	p0,
 	c1,
@@ -79,17 +103,17 @@ export const bezier2Translate = (
 	p2: ptAdd(p2, shift),
 });
 
-export const bezier2TsAtXEq = ({ p0, c1, p2 }: QuadraticBezier, x: number) =>
-	solveQuadratic(p2.x - p0.x + 2 * c1.x, 2 * (p0.x + c1.x), p0.x - x);
+export const bezier2TsAtXEq = (curve: QuadraticBezier, x: number) =>
+	polynomial3Roots(bezier2PolynomialX(curve), x);
 
-export const bezier2TsAtYEq = ({ p0, c1, p2 }: QuadraticBezier, y: number) =>
-	solveQuadratic(p2.y - p0.y + 2 * c1.y, 2 * (p0.y + c1.y), p0.y - y);
+export const bezier2TsAtYEq = (curve: QuadraticBezier, y: number) =>
+	polynomial3Roots(bezier2PolynomialY(curve), y);
 
 export const bezier2XTurningPointTs = ({ p0, c1, p2 }: QuadraticBezier) =>
-	solveLinear(p2.x - 2 * c1.x + p0.x, c1.x - p0.x);
+	polynomial2Roots([c1.x - p0.x, p2.x - 2 * c1.x + p0.x]);
 
 export const bezier2YTurningPointTs = ({ p0, c1, p2 }: QuadraticBezier) =>
-	solveLinear(p2.y - 2 * c1.y + p0.y, c1.y - p0.y);
+	polynomial2Roots([c1.y - p0.y, p2.y - 2 * c1.y + p0.y]);
 
 export const bezier2Bounds = (curve: QuadraticBezier): AxisAlignedBox =>
 	aaBoxFromXY(

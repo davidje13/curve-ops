@@ -34,6 +34,8 @@ export {
 	bezier3FromPts,
 	bezier3LengthEstimate,
 	bezier3NormalAt,
+	bezier3PolynomialX,
+	bezier3PolynomialY,
 	bezier3SVG,
 	bezier3Split,
 	bezier3TangentAt,
@@ -74,8 +76,15 @@ export {
 	lineMidpoint,
 	lineNormal,
 	lineSVG,
+	linePolynomialX,
+	linePolynomialY,
 	lineSplit,
+	lineTangent,
 	lineTranslate,
+	lineTsAtXEq,
+	lineTsAtYEq,
+	lineXAt,
+	lineYAt,
 } from './math/geometry/2d/LineSegment.mts';
 
 export {
@@ -136,6 +145,8 @@ export {
 	bezier2FromPts,
 	bezier2LengthEstimate,
 	bezier2NormalAt,
+	bezier2PolynomialX,
+	bezier2PolynomialY,
 	bezier2SVG,
 	bezier2Split,
 	bezier2TangentAt,
@@ -179,6 +190,7 @@ export {
 	bezierMInv,
 	bezierNormalAt,
 	bezierOrder,
+	bezierPolynomials,
 	bezierSplit,
 	bezierTangentAt,
 	bezierTranslate,
@@ -261,19 +273,38 @@ export {
 } from './math/Matrix.mts';
 
 export {
+	type Polynomial,
+	polynomial2Roots,
+	polynomial3Roots,
+	polynomial4Roots,
+	polynomial7SignedRoots,
+	polynomialAdd,
+	polynomialAt,
+	polynomialDerivative,
+	polynomialIntegral,
+	polynomialMul,
+	polynomialRoots,
+	polynomialScale,
+	polynomialShift,
+	polynomialSub,
+	polynomialWithSolutions,
+} from './math/Polynomial.mts';
+
+export {
 	type Quaternion,
 	mat3FromQuatNoNorm,
 	mat3FromQuatNorm,
 } from './math/Quaternion.mts';
 
-export {
-	solveLinear,
-	solveQuadratic,
-	solveCubic,
-	solveO6,
-} from './math/roots.mts';
-
 export { CurveDrawer } from './tools/CurveDrawer.mts';
+
+export type {
+	Decrement,
+	DivideWhole,
+	Increment,
+	Max,
+	Multiply,
+} from './types/numeric.mts';
 
 export {
 	type SizedArray,

@@ -21,6 +21,20 @@ type NATURAL = [
 export type Increment<N extends number> = NATURAL[N];
 export type Decrement<N extends number> = [never, 0, ...NATURAL][N];
 
+export type Max<A extends number, B extends number> = [
+	B[],
+	[A, ...B[]],
+	[A, A, ...B[]],
+	[A, A, A, ...B[]],
+	[A, A, A, A, ...B[]],
+	[A, A, A, A, A, ...B[]],
+	[A, A, A, A, A, A, ...B[]],
+	[A, A, A, A, A, A, A, ...B[]],
+	[A, A, A, A, A, A, A, A, ...B[]],
+	[A, A, A, A, A, A, A, A, A, ...B[]],
+	...[A, A, A, A, A, A, A, A, A, A, ...number[]][],
+][A][B];
+
 export type Multiply<A extends number, B extends number> = [
 	0[],
 	B[],

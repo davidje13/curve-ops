@@ -11,6 +11,7 @@ import {
 	matMul,
 	type Matrix,
 } from '../Matrix.mts';
+import type { Polynomial } from '../Polynomial.mts';
 import { vec3Cross, vecAdd, vecNorm, type Vector } from './Vector.mts';
 
 export type Bezier<Points extends number, Dim extends number> = Matrix<
@@ -22,6 +23,42 @@ export const bezierAt = <Points extends number, Dim extends number>(
 	curve: Bezier<Points, Dim>,
 	t: number,
 ) => bezierAtMulti(curve, [t]);
+
+export function bezierAtMulti<
+	Points extends number,
+	Dim extends number,
+	const Ts extends number[],
+>(curve: Bezier<Points, Dim>, ts: Ts): Matrix<Ts['length'], Dim> {
+	const ordP1 = curve.m;
+	const tVals: number[] = [];
+	for (let i = 0; i < ts.length; ++i) {
+		const t = ts[i]!;
+		for (let j = 0, v = 1; j < ordP1; ++j) {
+			tVals.push(v);
+			v *= t;
+		}
+	}
+	return matMul(
+		internalMatFromFlat(tVals, ts.length as Ts['length'], ordP1),
+		matMul(bezierM(curve.m), curve),
+	);
+}
+
+export const bezierPolynomials = <Points extends number, Dim extends number>(
+	curve: Bezier<Points, Dim>,
+): SizedArrayWithLength<Polynomial<Points>, Dim> => {
+	const { m, n } = curve;
+	const M = matMul(bezierM(m), curve);
+	const r: Polynomial[] = [];
+	for (let dim = 0; dim < n; ++dim) {
+		const poly: number[] = [];
+		for (let i = 0; i < m; ++i) {
+			poly.push(M.v[i * n + dim]!);
+		}
+		r.push(poly);
+	}
+	return r as SizedArrayWithLength<Polynomial<Points>, Dim>;
+};
 
 export const bezierOrder = (curve: Bezier<number, number>) => curve.m - 1;
 
@@ -104,26 +141,6 @@ export function bezierMInv<Points extends number>(
 	}
 	BEZIER_M_INV_CACHE.set(n, Minv);
 	return Minv;
-}
-
-export function bezierAtMulti<
-	Points extends number,
-	Dim extends number,
-	const Ts extends number[],
->(curve: Bezier<Points, Dim>, ts: Ts): Matrix<Ts['length'], Dim> {
-	const ordP1 = curve.m;
-	const tVals: number[] = [];
-	for (let i = 0; i < ts.length; ++i) {
-		const t = ts[i]!;
-		for (let j = 0, v = 1; j < ordP1; ++j) {
-			tVals.push(v);
-			v *= t;
-		}
-	}
-	return matMul(
-		internalMatFromFlat(tVals, ts.length as Ts['length'], ordP1),
-		matMul(bezierM(curve.m), curve),
-	);
 }
 
 export function bezierDerivative<Points extends number, Dim extends number>({

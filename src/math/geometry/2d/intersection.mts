@@ -1,4 +1,4 @@
-import { solveO6 } from '../../roots.mts';
+import { polynomial7SignedRoots } from '../../Polynomial.mts';
 import type { AxisAlignedBox } from './AxisAlignedBox.mts';
 import type { Circle } from './Circle.mts';
 import {
@@ -15,7 +15,7 @@ import {
 	type LineSegment,
 } from './LineSegment.mts';
 import { bezier3Normalise } from './NormalisedCubicBezier.mts';
-import type { Rectangle } from './Rectangle.mjs';
+import type { Rectangle } from './Rectangle.mts';
 import { ptAdd, ptDot, ptLen2, type Pt } from './Pt.mts';
 import { bezier2XAt, bezier2YAt } from './QuadraticBezier.mts';
 
@@ -47,9 +47,8 @@ export function intersectBezier3Line(
 		c2: norm.fn(c2),
 		p3: norm.fn(p3),
 	};
-	const ts = bezier3TsAtYEq(curve, 0);
 	const r: { t1: number; t2: number }[] = [];
-	for (const t1 of ts) {
+	for (const t1 of bezier3TsAtYEq(curve, 0)) {
 		if (t1 >= 0 && t1 <= 1) {
 			const t2 = bezier3XAt(curve, t1);
 			if (t2 >= 0 && t2 <= 1) {
@@ -159,14 +158,17 @@ export function intersectNBezier3CircleFn(
 		const c2c = ptDot(c2, center) * 6;
 
 		// terms for t^n in distance equation
-		return solveO6(
-			f6,
-			f5,
-			f4,
-			f3 - c1c + c2c - 2 * ptDot(p3, center),
-			a + 2 * c1c - c2c,
-			-c1c,
-			ptLen2(center) - rad2,
+		return polynomial7SignedRoots(
+			[
+				ptLen2(center),
+				-c1c,
+				a + 2 * c1c - c2c,
+				f3 - c1c + c2c - 2 * ptDot(p3, center),
+				f4,
+				f5,
+				f6,
+			],
+			rad2,
 			{ min: 0, max: 1, maxError },
 		).map(([t1, d1]) => ({ t1, d1 }));
 	};

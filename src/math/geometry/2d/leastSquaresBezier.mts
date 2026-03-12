@@ -10,7 +10,11 @@ import {
 	mat2LeftInverse,
 	mat1LeftInverse,
 } from '../../Matrix.mts';
-import { solveCubic, solveQuadratic } from '../../roots.mts';
+import {
+	polynomial3Roots,
+	polynomial4Roots,
+	type Polynomial,
+} from '../../Polynomial.mts';
 import {
 	bezier3FromBezier2,
 	bezier3FromLine,
@@ -118,6 +122,12 @@ export function leastSquaresFitCubicFixEnds(
 		if (prevControl && ptDist2(p0, prevControl)) {
 			const c1n = ptNorm(ptSub(p0, prevControl));
 			const TCurve = ptLen2(dN) ? ptDot(c1n, ptNorm(dN)) ** 2 : 1;
+			const TPoly: Polynomial<4> = [
+				0,
+				TCurve,
+				1.5 - TCurve * 1.5,
+				TCurve * 0.5 - 0.5,
+			];
 			const adjustedPoints: Pt[] = [];
 			const Tv: [number, number][] = [];
 			for (let i = 1; i < points.length - 1; ++i) {
@@ -129,9 +139,7 @@ export function leastSquaresFitCubicFixEnds(
 
 				// p = (TCurve/2 - 1/2) t^3 + (3/2 - 3/2 TCurve) t^2 + Bt
 				const t =
-					solveCubic(TCurve * 0.5 - 0.5, 1.5 - TCurve * 1.5, TCurve, -p).filter(
-						(t) => t >= 0 && t <= 1,
-					)[0] ?? p;
+					polynomial4Roots(TPoly, p).filter((t) => t >= 0 && t <= 1)[0] ?? p;
 
 				const tt = t * t;
 				const ttt = tt * t;
@@ -184,6 +192,7 @@ export function leastSquaresFitCubicFixEnds(
 		if (prevControl && ptDist2(p0, prevControl)) {
 			const c1n = ptNorm(ptSub(p0, prevControl));
 			const TCurve = ptLen2(dN) ? ptDot(c1n, ptNorm(dN)) ** 2 : 1;
+			const TPoly: Polynomial<3> = [0, TCurve * 0.5, 1 - TCurve * 0.5];
 			const adjustedPoints: Pt[] = [];
 			const Tv: number[] = [];
 			for (let i = 1; i < points.length - 1; ++i) {
@@ -195,9 +204,7 @@ export function leastSquaresFitCubicFixEnds(
 
 				// p = t*t*(1 - TCurve/2) + t*TCurve/2
 				const t =
-					solveQuadratic(1 - TCurve * 0.5, TCurve * 0.5, -p).filter(
-						(t) => t >= 0 && t <= 1,
-					)[0] ?? p;
+					polynomial3Roots(TPoly, p).filter((t) => t >= 0 && t <= 1)[0] ?? p;
 
 				const tt = t * t;
 				adjustedPoints.push(ptMad(dN, -tt, ptSub(pt, p0)));

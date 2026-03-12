@@ -1,4 +1,4 @@
-import { solveLinear } from '../../roots.mts';
+import { polynomial2Roots, type Polynomial } from '../../Polynomial.mts';
 import type { AxisAlignedBox } from './AxisAlignedBox.mts';
 import {
 	ptAdd,
@@ -32,6 +32,16 @@ export const lineXAt = ({ p0, p1 }: LineSegment, t: number) =>
 export const lineYAt = ({ p0, p1 }: LineSegment, t: number) =>
 	p0.y + (p1.y - p0.y) * t;
 
+export const linePolynomialX = ({ p0, p1 }: LineSegment): Polynomial<2> => [
+	p0.x,
+	p1.x - p0.x,
+];
+
+export const linePolynomialY = ({ p0, p1 }: LineSegment): Polynomial<2> => [
+	p0.y,
+	p1.y - p0.y,
+];
+
 export const lineMidpoint = ({ p0, p1 }: LineSegment) => ptMid(p0, p1);
 
 export const lineDerivative = ({ p0, p1 }: LineSegment) => ptSub(p1, p0);
@@ -49,11 +59,11 @@ export const lineTranslate = (
 	p1: ptAdd(p1, shift),
 });
 
-export const lineTsAtXEq = ({ p0, p1 }: LineSegment, x: number) =>
-	solveLinear(p1.x - p0.x, p0.x - x);
+export const lineTsAtXEq = (line: LineSegment, x: number) =>
+	polynomial2Roots(linePolynomialX(line), x);
 
-export const lineTsAtYEq = ({ p0, p1 }: LineSegment, y: number) =>
-	solveLinear(p1.y - p0.y, p0.y - y);
+export const lineTsAtYEq = (line: LineSegment, y: number) =>
+	polynomial2Roots(linePolynomialY(line), y);
 
 export const lineBounds = (line: LineSegment): AxisAlignedBox => ({
 	l: { x: Math.min(line.p0.x, line.p1.x), y: Math.min(line.p0.y, line.p1.y) },

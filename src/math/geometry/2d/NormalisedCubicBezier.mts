@@ -1,4 +1,4 @@
-import { solveQuadratic } from '../../roots.mts';
+import { polynomial3Roots } from '../../Polynomial.mts';
 import type { CubicBezier } from './CubicBezier.mts';
 import { lineAt, internalLineScaledNormalisation } from './LineSegment.mts';
 import { PT0, ptCross, ptLen, ptMad, ptMul, ptSub, type Pt } from './Pt.mts';
@@ -98,11 +98,11 @@ export function nBezier3InflectionTs({ c1, c2, p3 }: NormalisedCubicBezier) {
 	// [scaled] curve(t) = (3*s+2*c1y-c2y)*t^2 + (-3*s-c1y)*t + s
 	// s = c1x*c2y - c2x*c1y
 	const s = ptCross(c1, c2);
-	return solveQuadratic(
-		3 * s + (2 * c1.y - c2.y) * p3.x,
-		-3 * s - c1.y * p3.x,
+	return polynomial3Roots([
 		s,
-	);
+		-3 * s - c1.y * p3.x,
+		3 * s + (2 * c1.y - c2.y) * p3.x,
+	]);
 }
 
 export function nBezier3Area({ c1, c2, p3 }: NormalisedCubicBezier) {

@@ -1,4 +1,8 @@
-import { solveCubic, solveQuadratic } from '../../roots.mts';
+import {
+	polynomial3Roots,
+	polynomial4Roots,
+	type Polynomial,
+} from '../../Polynomial.mts';
 import { aaBoxFromXY, type AxisAlignedBox } from './AxisAlignedBox.mts';
 import type { LineSegment } from './LineSegment.mts';
 import {
@@ -68,6 +72,30 @@ export function bezier3YAt({ p0, c1, c2, p3 }: CubicBezier, t: number): number {
 	return p0.y * T * T * T + (3 * T * (c1.y * T + c2.y * t) + p3.y * t * t) * t;
 }
 
+export const bezier3PolynomialX = ({
+	p0,
+	c1,
+	c2,
+	p3,
+}: CubicBezier): Polynomial<4> => [
+	p0.x,
+	3 * (c1.x - p0.x),
+	3 * (p0.x - 2 * c1.x + c2.x),
+	p3.x - p0.x + 3 * (c1.x - c2.x),
+];
+
+export const bezier3PolynomialY = ({
+	p0,
+	c1,
+	c2,
+	p3,
+}: CubicBezier): Polynomial<4> => [
+	p0.y,
+	3 * (c1.y - p0.y),
+	3 * (p0.y - 2 * c1.y + c2.y),
+	p3.y - p0.y + 3 * (c1.y - c2.y),
+];
+
 export const bezier3Derivative = ({
 	p0,
 	c1,
@@ -95,37 +123,27 @@ export const bezier3Translate = (
 	p3: ptAdd(p3, shift),
 });
 
-export const bezier3TsAtXEq = ({ p0, c1, c2, p3 }: CubicBezier, x: number) =>
-	solveCubic(
-		p3.x - p0.x + 3 * (c1.x - c2.x),
-		3 * (p0.x + c2.x) - 6 * c1.x,
-		3 * (c1.x - p0.x),
-		p0.x - x,
-	);
+export const bezier3TsAtXEq = (curve: CubicBezier, x: number) =>
+	polynomial4Roots(bezier3PolynomialX(curve), x);
 
-export const bezier3TsAtYEq = ({ p0, c1, c2, p3 }: CubicBezier, x: number) =>
-	solveCubic(
-		p3.y - p0.y + 3 * (c1.y - c2.y),
-		3 * (p0.y + c2.y) - 6 * c1.y,
-		3 * (c1.y - p0.y),
-		p0.y - x,
-	);
+export const bezier3TsAtYEq = (curve: CubicBezier, y: number) =>
+	polynomial4Roots(bezier3PolynomialY(curve), y);
 
 // thanks, https://pomax.github.io/bezierinfo/#extremities
 export const bezier3XTurningPointTs = ({ p0, c1, c2, p3 }: CubicBezier) =>
-	solveQuadratic(
-		p3.x - p0.x + 3 * (c1.x - c2.x),
-		2 * (p0.x + c2.x) - 4 * c1.x,
+	polynomial3Roots([
 		c1.x - p0.x,
-	);
+		2 * (p0.x + c2.x) - 4 * c1.x,
+		p3.x - p0.x + 3 * (c1.x - c2.x),
+	]);
 
 // thanks, https://pomax.github.io/bezierinfo/#extremities
 export const bezier3YTurningPointTs = ({ p0, c1, c2, p3 }: CubicBezier) =>
-	solveQuadratic(
-		p3.y - p0.y + 3 * (c1.y - c2.y),
-		2 * (p0.y + c2.y) - 4 * c1.y,
+	polynomial3Roots([
 		c1.y - p0.y,
-	);
+		2 * (p0.y + c2.y) - 4 * c1.y,
+		p3.y - p0.y + 3 * (c1.y - c2.y),
+	]);
 
 export const bezier3Bounds = (curve: CubicBezier): AxisAlignedBox =>
 	aaBoxFromXY(

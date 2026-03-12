@@ -32,6 +32,15 @@ export function solveCubic(f3: number, f2: number, f1: number, f0: number) {
 	const p3 = p * p * p;
 	const q = (s * (2 * s * s - f1 * m) + f0 * m) * 0.5;
 	const disc = q * q + p3;
+
+	if (Math.abs(disc) < Number.EPSILON) {
+		if (Math.abs(q) < Number.EPSILON) {
+			return [-s];
+		}
+		const u1 = Math.cbrt(q);
+		return [-2 * u1 - s, u1 - s];
+	}
+
 	if (disc < 0) {
 		const r = Math.sqrt(-p3);
 		const phi = Math.acos(Math.max(-1, Math.min(1, -q / r))) * (1 / 3);
@@ -41,11 +50,6 @@ export function solveCubic(f3: number, f2: number, f1: number, f0: number) {
 			t1 * Math.cos(phi) - s,
 			t1 * Math.cos(phi + Math.PI * (2 / 3)) - s,
 		];
-	}
-
-	if (!disc) {
-		const u1 = Math.cbrt(q);
-		return [-2 * u1 - s, u1 - s];
 	}
 
 	const root = Math.sqrt(disc);

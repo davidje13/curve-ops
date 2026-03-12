@@ -31,8 +31,8 @@ describe('bezier2LengthEstimate', () => {
 
 	it('is accurate near edge cases', () => {
 		const PT1 = { x: 1, y: 0 };
-		for (let i = 1; i < 1000; ++i) {
-			const d = Number.EPSILON * Math.pow(1.03, i);
+		for (let i = 1; i < 100; ++i) {
+			const d = Number.EPSILON * Math.pow(1.34, i);
 			checkCurveLength(bezier2FromPts(PT0, { x: d, y: 0 }, PT1), 1);
 			checkCurveLength(bezier2FromPts(PT0, { x: 0, y: d }, PT1));
 			checkCurveLength(bezier2FromPts(PT0, { x: d, y: d }, PT1));

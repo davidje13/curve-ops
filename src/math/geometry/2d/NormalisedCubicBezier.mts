@@ -1,6 +1,6 @@
 import { solveQuadratic } from '../../roots.mts';
 import type { CubicBezier } from './CubicBezier.mts';
-import { lineAt, internalLineScaledNormalisation } from './Line.mts';
+import { lineAt, internalLineScaledNormalisation } from './LineSegment.mts';
 import { PT0, ptCross, ptLen, ptMad, ptMul, ptSub, type Pt } from './Pt.mts';
 import {
 	bezier2At,

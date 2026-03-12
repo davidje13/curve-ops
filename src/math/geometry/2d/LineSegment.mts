@@ -17,48 +17,52 @@ import {
 	type Pt,
 } from './Pt.mts';
 
-export interface Line {
+export interface LineSegment {
 	readonly p0: Pt;
 	readonly p1: Pt;
 }
 
-export const lineFromPts = (p0: Pt, p1: Pt): Line => ({ p0, p1 });
+export const lineFromPts = (p0: Pt, p1: Pt): LineSegment => ({ p0, p1 });
 
-export const lineAt = ({ p0, p1 }: Line, t: number) => ptLerp(p0, p1, t);
+export const lineAt = ({ p0, p1 }: LineSegment, t: number) => ptLerp(p0, p1, t);
 
-export const lineXAt = ({ p0, p1 }: Line, t: number) =>
+export const lineXAt = ({ p0, p1 }: LineSegment, t: number) =>
 	p0.x + (p1.x - p0.x) * t;
 
-export const lineYAt = ({ p0, p1 }: Line, t: number) =>
+export const lineYAt = ({ p0, p1 }: LineSegment, t: number) =>
 	p0.y + (p1.y - p0.y) * t;
 
-export const lineMidpoint = ({ p0, p1 }: Line) => ptMid(p0, p1);
+export const lineMidpoint = ({ p0, p1 }: LineSegment) => ptMid(p0, p1);
 
-export const lineDerivative = ({ p0, p1 }: Line) => ptSub(p1, p0);
+export const lineDerivative = ({ p0, p1 }: LineSegment) => ptSub(p1, p0);
 
-export const lineTangent = (line: Line): Pt => ptNorm(lineDerivative(line));
+export const lineTangent = (line: LineSegment): Pt =>
+	ptNorm(lineDerivative(line));
 
-export const lineNormal = (line: Line): Pt => ptRot90(lineTangent(line));
+export const lineNormal = (line: LineSegment): Pt => ptRot90(lineTangent(line));
 
-export const lineTranslate = ({ p0, p1 }: Line, shift: Pt): Line => ({
+export const lineTranslate = (
+	{ p0, p1 }: LineSegment,
+	shift: Pt,
+): LineSegment => ({
 	p0: ptAdd(p0, shift),
 	p1: ptAdd(p1, shift),
 });
 
-export const lineTsAtXEq = ({ p0, p1 }: Line, x: number) =>
+export const lineTsAtXEq = ({ p0, p1 }: LineSegment, x: number) =>
 	solveLinear(p1.x - p0.x, p0.x - x);
 
-export const lineTsAtYEq = ({ p0, p1 }: Line, y: number) =>
+export const lineTsAtYEq = ({ p0, p1 }: LineSegment, y: number) =>
 	solveLinear(p1.y - p0.y, p0.y - y);
 
-export const lineBounds = (line: Line): AxisAlignedBox => ({
+export const lineBounds = (line: LineSegment): AxisAlignedBox => ({
 	l: { x: Math.min(line.p0.x, line.p1.x), y: Math.min(line.p0.y, line.p1.y) },
 	h: { x: Math.max(line.p0.x, line.p1.x), y: Math.max(line.p0.y, line.p1.y) },
 });
 
-export const lineLength = ({ p0, p1 }: Line) => ptDist(p1, p0);
+export const lineLength = ({ p0, p1 }: LineSegment) => ptDist(p1, p0);
 
-export function internalLineScaledNormalisation({ p0, p1 }: Line) {
+export function internalLineScaledNormalisation({ p0, p1 }: LineSegment) {
 	const d = ptSub(p1, p0);
 	const scale2 = ptLen2(d);
 	if (!scale2) {
@@ -76,7 +80,7 @@ export function internalLineScaledNormalisation({ p0, p1 }: Line) {
 	return { scale2, fn };
 }
 
-export function internalLineUnscaledNormalisation({ p0, p1 }: Line) {
+export function internalLineUnscaledNormalisation({ p0, p1 }: LineSegment) {
 	const d = ptSub(p1, p0);
 	const l = ptLen(d);
 	if (!l) {
@@ -94,7 +98,10 @@ export function internalLineUnscaledNormalisation({ p0, p1 }: Line) {
 	return { l, fn };
 }
 
-export function lineBisect({ p0, p1 }: Line, t = 0.5): [Line, Line] {
+export function lineBisect(
+	{ p0, p1 }: LineSegment,
+	t = 0.5,
+): [LineSegment, LineSegment] {
 	const mid = ptLerp(p0, p1, t);
 	return [
 		{ p0, p1: mid },
@@ -103,10 +110,10 @@ export function lineBisect({ p0, p1 }: Line, t = 0.5): [Line, Line] {
 }
 
 export function lineSplit(
-	{ p0, p1 }: Line,
+	{ p0, p1 }: LineSegment,
 	splits: number[],
 	minRange = 1e-6,
-): Line[] {
+): LineSegment[] {
 	let pp0 = p0;
 	let pt = 0;
 	const r = [];
@@ -124,15 +131,15 @@ export function lineSplit(
 }
 
 export const lineSVG = (
-	{ p0, p1 }: Line,
+	{ p0, p1 }: LineSegment,
 	precision?: number | undefined,
 	prefix = 'M',
 	mode = 'L',
 ) => `${prefix}${ptSVG(p0, precision)}${mode}${ptSVG(p1, precision)}`;
 
 export function intersectLineLine(
-	a: Line,
-	b: Line,
+	a: LineSegment,
+	b: LineSegment,
 ): { t1: number; t2: number }[] {
 	const ab = ptSub(b.p0, a.p0);
 	const aD = ptSub(a.p1, a.p0);

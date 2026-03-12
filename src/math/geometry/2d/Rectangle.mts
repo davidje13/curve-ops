@@ -1,5 +1,9 @@
 import { aaBoxMidpoint, type AxisAlignedBox } from './AxisAlignedBox.mts';
-import { lineDerivative, lineMidpoint, type Line } from './Line.mts';
+import {
+	lineDerivative,
+	lineMidpoint,
+	type LineSegment,
+} from './LineSegment.mts';
 import { ptAdd, ptLen, ptLen2, ptSub, ptSVG, type Pt } from './Pt.mts';
 
 export interface Rectangle {
@@ -8,7 +12,7 @@ export interface Rectangle {
 	readonly aspect: number; // width/height
 }
 
-export function rectFromLine(line: Line, width: number): Rectangle {
+export function rectFromLine(line: LineSegment, width: number): Rectangle {
 	const d = lineDerivative(line);
 	return { c: lineMidpoint(line), d, aspect: width / ptLen(d) };
 }

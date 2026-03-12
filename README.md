@@ -13,7 +13,7 @@ code removal) for minimal deployed code size.
   - Axis-Aligned Bounding Boxes
   - Rectangles
   - Circles
-  - Lines (line segments)
+  - Line Segments
   - Béziers
     - any degree, any dimension
     - optimisations and extra features for 2D quadratic and cubic Béziers

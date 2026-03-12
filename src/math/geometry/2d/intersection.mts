@@ -10,7 +10,10 @@ import {
 	bezier3YAt,
 	type CubicBezier,
 } from './CubicBezier.mts';
-import { internalLineScaledNormalisation, type Line } from './Line.mts';
+import {
+	internalLineScaledNormalisation,
+	type LineSegment,
+} from './LineSegment.mts';
 import { bezier3Normalise } from './NormalisedCubicBezier.mts';
 import type { Rectangle } from './Rectangle.mjs';
 import { ptAdd, ptDot, ptLen2, type Pt } from './Pt.mts';
@@ -31,7 +34,7 @@ function isOverlapAABoxCircleR2(
 
 export function intersectBezier3Line(
 	{ p0, c1, c2, p3 }: CubicBezier,
-	line: Line,
+	line: LineSegment,
 ): { t1: number; t2: number }[] {
 	// thanks, https://pomax.github.io/bezierinfo/#intersections
 	const norm = internalLineScaledNormalisation(line);

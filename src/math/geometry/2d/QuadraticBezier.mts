@@ -1,6 +1,10 @@
 import { solveLinear, solveQuadratic } from '../../roots.mts';
 import { aaBoxFromXY, type AxisAlignedBox } from './AxisAlignedBox.mts';
-import { internalLineScaledNormalisation, lineAt, type Line } from './Line.mts';
+import {
+	internalLineScaledNormalisation,
+	lineAt,
+	type LineSegment,
+} from './LineSegment.mts';
 import {
 	ptAdd,
 	ptDist,
@@ -30,7 +34,7 @@ export const bezier2FromPts = (p0: Pt, c1: Pt, p2: Pt): QuadraticBezier => ({
 	p2,
 });
 
-export const bezier2FromLine = ({ p0, p1 }: Line): QuadraticBezier => ({
+export const bezier2FromLine = ({ p0, p1 }: LineSegment): QuadraticBezier => ({
 	p0: p0,
 	c1: ptMid(p0, p1),
 	p2: p1,
@@ -51,7 +55,11 @@ export function bezier2YAt({ p0, c1, p2 }: QuadraticBezier, t: number): number {
 	return p0.y * T * T + (2 * c1.y * T + p2.y * t) * t;
 }
 
-export const bezier2Derivative = ({ p0, c1, p2 }: QuadraticBezier): Line => ({
+export const bezier2Derivative = ({
+	p0,
+	c1,
+	p2,
+}: QuadraticBezier): LineSegment => ({
 	p0: ptMul(ptSub(c1, p0), 2),
 	p1: ptMul(ptSub(p2, c1), 2),
 });

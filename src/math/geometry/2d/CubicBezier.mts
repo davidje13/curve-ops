@@ -1,6 +1,6 @@
 import { solveCubic, solveQuadratic } from '../../roots.mts';
 import { aaBoxFromXY, type AxisAlignedBox } from './AxisAlignedBox.mts';
-import type { Line } from './Line.mts';
+import type { LineSegment } from './LineSegment.mts';
 import {
 	ptAdd,
 	ptDist,
@@ -42,7 +42,7 @@ export const bezier3FromBezier2 = ({
 	p3: p2,
 });
 
-export const bezier3FromLine = ({ p0, p1 }: Line): CubicBezier => ({
+export const bezier3FromLine = ({ p0, p1 }: LineSegment): CubicBezier => ({
 	p0: p0,
 	c1: ptLerp(p0, p1, 1 / 3),
 	c2: ptLerp(p0, p1, 2 / 3),

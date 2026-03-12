@@ -63,7 +63,7 @@ export {
 } from './math/geometry/2d/leastSquaresBezier.mts';
 
 export {
-	type Line,
+	type LineSegment,
 	intersectLineLine,
 	lineAt,
 	lineBisect,
@@ -76,7 +76,7 @@ export {
 	lineSVG,
 	lineSplit,
 	lineTranslate,
-} from './math/geometry/2d/Line.mts';
+} from './math/geometry/2d/LineSegment.mts';
 
 export {
 	type NormalisedCubicBezier,

@@ -1,5 +1,8 @@
+import { solveLinear } from '../../roots.mts';
+import type { AxisAlignedBox } from './AxisAlignedBox.mts';
 import {
 	ptAdd,
+	ptCross,
 	ptDist,
 	ptLen,
 	ptLen2,
@@ -23,15 +26,34 @@ export const lineFromPts = (p0: Pt, p1: Pt): Line => ({ p0, p1 });
 
 export const lineAt = ({ p0, p1 }: Line, t: number) => ptLerp(p0, p1, t);
 
-export const lineDerivative = ({ p0, p1 }: Line) => ptSub(p1, p0);
+export const lineXAt = ({ p0, p1 }: Line, t: number) =>
+	p0.x + (p1.x - p0.x) * t;
+
+export const lineYAt = ({ p0, p1 }: Line, t: number) =>
+	p0.y + (p1.y - p0.y) * t;
 
 export const lineMidpoint = ({ p0, p1 }: Line) => ptMid(p0, p1);
 
-export const lineNormal = ({ p0, p1 }: Line) => ptNorm(ptRot90(ptSub(p1, p0)));
+export const lineDerivative = ({ p0, p1 }: Line) => ptSub(p1, p0);
+
+export const lineTangent = (line: Line): Pt => ptNorm(lineDerivative(line));
+
+export const lineNormal = (line: Line): Pt => ptRot90(lineTangent(line));
 
 export const lineTranslate = ({ p0, p1 }: Line, shift: Pt): Line => ({
 	p0: ptAdd(p0, shift),
 	p1: ptAdd(p1, shift),
+});
+
+export const lineTsAtXEq = ({ p0, p1 }: Line, x: number) =>
+	solveLinear(p1.x - p0.x, p0.x - x);
+
+export const lineTsAtYEq = ({ p0, p1 }: Line, y: number) =>
+	solveLinear(p1.y - p0.y, p0.y - y);
+
+export const lineBounds = (line: Line): AxisAlignedBox => ({
+	l: { x: Math.min(line.p0.x, line.p1.x), y: Math.min(line.p0.y, line.p1.y) },
+	h: { x: Math.max(line.p0.x, line.p1.x), y: Math.max(line.p0.y, line.p1.y) },
 });
 
 export const lineLength = ({ p0, p1 }: Line) => ptDist(p1, p0);
@@ -72,9 +94,57 @@ export function internalLineUnscaledNormalisation({ p0, p1 }: Line) {
 	return { l, fn };
 }
 
+export function lineBisect({ p0, p1 }: Line, t = 0.5): [Line, Line] {
+	const mid = ptLerp(p0, p1, t);
+	return [
+		{ p0, p1: mid },
+		{ p0: mid, p1 },
+	];
+}
+
+export function lineSplit(
+	{ p0, p1 }: Line,
+	splits: number[],
+	minRange = 1e-6,
+): Line[] {
+	let pp0 = p0;
+	let pt = 0;
+	const r = [];
+	for (const t of splits.filter((t) => t > 0 && t < 1).sort()) {
+		if (t <= pt + minRange) {
+			continue;
+		}
+		const mid = ptLerp(p0, p1, t);
+		r.push({ p0: pp0, p1: mid });
+		pp0 = mid;
+		pt = t;
+	}
+	r.push({ p0: pp0, p1 });
+	return r;
+}
+
 export const lineSVG = (
 	{ p0, p1 }: Line,
 	precision?: number | undefined,
 	prefix = 'M',
 	mode = 'L',
 ) => `${prefix}${ptSVG(p0, precision)}${mode}${ptSVG(p1, precision)}`;
+
+export function intersectLineLine(
+	a: Line,
+	b: Line,
+): { t1: number; t2: number }[] {
+	const ab = ptSub(b.p0, a.p0);
+	const aD = ptSub(a.p1, a.p0);
+	const bD = ptSub(b.p1, b.p0);
+
+	const den = ptCross(aD, bD);
+	if (den) {
+		const t1 = ptCross(ab, bD) / den;
+		const t2 = ptCross(ab, aD) / den;
+		if (t1 >= 0 && t1 <= 1 && t2 >= 0 && t2 <= 1) {
+			return [{ t1, t2 }];
+		}
+	}
+	return [];
+}

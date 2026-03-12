@@ -138,6 +138,22 @@ export const matAdd = <M extends number, N extends number>(
 	b: Matrix<M, N>,
 ) => matBinaryOp(a, b, (a, b) => a + b, '+');
 
+export function matAddColumnwise<M extends number, N extends number>(
+	{ v, m, n }: Matrix<M, N>,
+	b: Matrix<1, N>,
+) {
+	if (n !== b.n) {
+		throw new Error('invalid matrix operation');
+	}
+	const newV: number[] = [];
+	for (let j = 0; j < m; ++j) {
+		for (let i = 0; i < n; ++i) {
+			newV.push(v[j * n + i]! + b.v[i]!);
+		}
+	}
+	return internalMatFromFlat(newV, m, n);
+}
+
 export const matSub = <M extends number, N extends number>(
 	a: Matrix<M, N>,
 	b: Matrix<M, N>,

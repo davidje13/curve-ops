@@ -1,4 +1,6 @@
-import { internalLineScaledNormalisation, type Line } from './Line.mts';
+import { solveLinear, solveQuadratic } from '../../roots.mts';
+import { aaBoxFromXY, type AxisAlignedBox } from './AxisAlignedBox.mts';
+import { internalLineScaledNormalisation, lineAt, type Line } from './Line.mts';
 import {
 	ptAdd,
 	ptDist,
@@ -9,6 +11,8 @@ import {
 	ptMad,
 	ptMid,
 	ptMul,
+	ptNorm,
+	ptRot90,
 	ptSub,
 	ptSVG,
 	type Pt,
@@ -52,6 +56,12 @@ export const bezier2Derivative = ({ p0, c1, p2 }: QuadraticBezier): Line => ({
 	p1: ptMul(ptSub(p2, c1), 2),
 });
 
+export const bezier2TangentAt = (curve: QuadraticBezier, t: number): Pt =>
+	ptNorm(lineAt(bezier2Derivative(curve), t));
+
+export const bezier2NormalAt = (curve: QuadraticBezier, t: number): Pt =>
+	ptRot90(bezier2TangentAt(curve, t));
+
 export const bezier2Translate = (
 	{ p0, c1, p2 }: QuadraticBezier,
 	shift: Pt,
@@ -60,6 +70,36 @@ export const bezier2Translate = (
 	c1: ptAdd(c1, shift),
 	p2: ptAdd(p2, shift),
 });
+
+export const bezier2TsAtXEq = ({ p0, c1, p2 }: QuadraticBezier, x: number) =>
+	solveQuadratic(p2.x - p0.x + 2 * c1.x, 2 * (p0.x + c1.x), p0.x - x);
+
+export const bezier2TsAtYEq = ({ p0, c1, p2 }: QuadraticBezier, y: number) =>
+	solveQuadratic(p2.y - p0.y + 2 * c1.y, 2 * (p0.y + c1.y), p0.y - y);
+
+export const bezier2XTurningPointTs = ({ p0, c1, p2 }: QuadraticBezier) =>
+	solveLinear(p2.x - 2 * c1.x + p0.x, c1.x - p0.x);
+
+export const bezier2YTurningPointTs = ({ p0, c1, p2 }: QuadraticBezier) =>
+	solveLinear(p2.y - 2 * c1.y + p0.y, c1.y - p0.y);
+
+export const bezier2Bounds = (curve: QuadraticBezier): AxisAlignedBox =>
+	aaBoxFromXY(
+		[
+			curve.p0.x,
+			curve.p2.x,
+			...bezier2XTurningPointTs(curve)
+				.filter((t) => t > 0 && t < 1)
+				.map(bezier2XAt.bind(null, curve)),
+		],
+		[
+			curve.p0.y,
+			curve.p2.y,
+			...bezier2YTurningPointTs(curve)
+				.filter((t) => t > 0 && t < 1)
+				.map(bezier2YAt.bind(null, curve)),
+		],
+	);
 
 export function bezier2LengthEstimate(
 	curve: QuadraticBezier,

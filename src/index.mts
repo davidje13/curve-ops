@@ -64,13 +64,17 @@ export {
 
 export {
 	type Line,
+	intersectLineLine,
 	lineAt,
+	lineBisect,
+	lineBounds,
 	lineDerivative,
 	lineFromPts,
 	lineLength,
 	lineMidpoint,
 	lineNormal,
 	lineSVG,
+	lineSplit,
 	lineTranslate,
 } from './math/geometry/2d/Line.mts';
 
@@ -126,15 +130,22 @@ export {
 	type QuadraticBezier,
 	bezier2At,
 	bezier2Bisect,
+	bezier2Bounds,
 	bezier2Derivative,
 	bezier2FromLine,
 	bezier2FromPts,
 	bezier2LengthEstimate,
+	bezier2NormalAt,
 	bezier2SVG,
 	bezier2Split,
+	bezier2TangentAt,
 	bezier2Translate,
+	bezier2TsAtXEq,
+	bezier2TsAtYEq,
 	bezier2XAt,
+	bezier2XTurningPointTs,
 	bezier2YAt,
+	bezier2YTurningPointTs,
 } from './math/geometry/2d/QuadraticBezier.mts';
 
 export {
@@ -170,6 +181,7 @@ export {
 	bezierOrder,
 	bezierSplit,
 	bezierTangentAt,
+	bezierTranslate,
 } from './math/geometry/Bezier.mts';
 
 export {
@@ -222,6 +234,7 @@ export {
 	mat4LeftInverse,
 	mat4RightInverse,
 	matAdd,
+	matAddColumnwise,
 	matBinaryOp,
 	matDeterminant,
 	matFrom,

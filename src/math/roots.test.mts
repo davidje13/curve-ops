@@ -28,8 +28,19 @@ describe('solveQuadratic', () => {
 		expect(roots[0]!).isNear(3);
 	});
 
+	it('returns a linear solution if a is 0', () => {
+		const roots = solveQuadratic(0, 4, -2);
+		expect(roots).hasLength(1);
+		expect(roots[0]!).isNear(0.5);
+	});
+
 	it('returns no solutions if the equation has no roots', () => {
 		const roots = solveQuadratic(10, 1, 10);
+		expect(roots).isEmpty();
+	});
+
+	it('returns no solutions if a and b are 0', () => {
+		const roots = solveQuadratic(0, 0, 10);
 		expect(roots).isEmpty();
 	});
 });

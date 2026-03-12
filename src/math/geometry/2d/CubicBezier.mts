@@ -95,41 +95,37 @@ export const bezier3Translate = (
 	p3: ptAdd(p3, shift),
 });
 
-export function bezier3TsAtXEq({ p0, c1, c2, p3 }: CubicBezier, x: number) {
-	return solveCubic(
+export const bezier3TsAtXEq = ({ p0, c1, c2, p3 }: CubicBezier, x: number) =>
+	solveCubic(
 		p3.x - p0.x + 3 * (c1.x - c2.x),
 		3 * (p0.x + c2.x) - 6 * c1.x,
 		3 * (c1.x - p0.x),
 		p0.x - x,
 	);
-}
 
-export function bezier3TsAtYEq({ p0, c1, c2, p3 }: CubicBezier, x: number) {
-	return solveCubic(
+export const bezier3TsAtYEq = ({ p0, c1, c2, p3 }: CubicBezier, x: number) =>
+	solveCubic(
 		p3.y - p0.y + 3 * (c1.y - c2.y),
 		3 * (p0.y + c2.y) - 6 * c1.y,
 		3 * (c1.y - p0.y),
 		p0.y - x,
 	);
-}
 
-export function bezier3XTurningPointTs({ p0, c1, c2, p3 }: CubicBezier) {
-	// thanks, https://pomax.github.io/bezierinfo/#extremities
-	return solveQuadratic(
+// thanks, https://pomax.github.io/bezierinfo/#extremities
+export const bezier3XTurningPointTs = ({ p0, c1, c2, p3 }: CubicBezier) =>
+	solveQuadratic(
 		p3.x - p0.x + 3 * (c1.x - c2.x),
 		2 * (p0.x + c2.x) - 4 * c1.x,
 		c1.x - p0.x,
 	);
-}
 
-export function bezier3YTurningPointTs({ p0, c1, c2, p3 }: CubicBezier) {
-	// thanks, https://pomax.github.io/bezierinfo/#extremities
-	return solveQuadratic(
+// thanks, https://pomax.github.io/bezierinfo/#extremities
+export const bezier3YTurningPointTs = ({ p0, c1, c2, p3 }: CubicBezier) =>
+	solveQuadratic(
 		p3.y - p0.y + 3 * (c1.y - c2.y),
 		2 * (p0.y + c2.y) - 4 * c1.y,
 		c1.y - p0.y,
 	);
-}
 
 export const bezier3Bounds = (curve: CubicBezier): AxisAlignedBox =>
 	aaBoxFromXY(

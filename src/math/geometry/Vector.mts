@@ -89,12 +89,35 @@ export const vecAngle = <Dim extends number>(a: Vector<Dim>, b: Vector<Dim>) =>
 		),
 	);
 
-export const vecAdd = matAdd;
-export const vecMul = matScale;
-export const vecMad = matScaleAdd;
-export const vecSub = matSub;
-export const vecLerp = matLerp;
-export const vecMid = matMid;
+export const vecAdd: <N extends number>(
+	a: Vector<N>,
+	b: Vector<N>,
+) => Vector<N> = matAdd;
+
+export const vecMul: <N extends number>(a: Vector<N>, b: number) => Vector<N> =
+	matScale;
+
+export const vecMad: <N extends number>(
+	a: Vector<N>,
+	s: number,
+	b: Vector<N>,
+) => Vector<N> = matScaleAdd;
+
+export const vecSub: <N extends number>(
+	a: Vector<N>,
+	b: Vector<N>,
+) => Vector<N> = matSub;
+
+export const vecLerp: <N extends number>(
+	a: Vector<N>,
+	b: Vector<N>,
+	t: number,
+) => Vector<N> = matLerp;
+
+export const vecMid: <N extends number>(
+	a: Vector<N>,
+	b: Vector<N>,
+) => Vector<N> = matMid;
 
 function assertVecSizeSame<S extends number>(
 	a: Vector<S>,

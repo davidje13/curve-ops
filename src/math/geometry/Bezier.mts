@@ -4,6 +4,7 @@ import { binomial } from '../binomial.mts';
 import {
 	internalMatFromFlat,
 	MAT2ROT90,
+	matAddColumnwise,
 	matFromDiag,
 	matInverse,
 	matLeftInverse,
@@ -150,6 +151,11 @@ export const bezierNormalAt = <Points extends number>(
 	curve: Bezier<Points, 2>,
 	t: number,
 ): Vector<2> => matMul(bezierTangentAt(curve, t), MAT2ROT90);
+
+export const bezierTranslate = <Points extends number, Dim extends number>(
+	curve: Bezier<Points, Dim>,
+	shift: Vector<Dim>,
+): Bezier<Points, Dim> => matAddColumnwise(curve, shift);
 
 export const bezierFrenetNormalAt = <Points extends number>(
 	curve: Bezier<Points, 3>,

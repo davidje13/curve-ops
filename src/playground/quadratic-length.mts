@@ -324,15 +324,15 @@ document.body.append(
 		const samples = 1000;
 		const begin1 = performance.now();
 		for (let r = 0; r < samples; ++r) {
-			bezier2LengthEstimate(bezier);
+			bezier2LengthEstimate(bezier, 1e-13);
 		}
 		const end1 = performance.now();
 		const beginT = performance.now();
 		const trueLength = measureSegmented(bezier);
 		const endT = performance.now();
-		const estLength = bezier2LengthEstimate(bezier);
+		const estLength = bezier2LengthEstimate(bezier, 1e-13);
 		out.innerText = [
-			`True Length:      ${trueLength.toFixed(16)} (${(endT - beginT).toFixed(4)}ms)`,
+			`True Length:     ~${trueLength.toFixed(16)} (${(endT - beginT).toFixed(4)}ms)`,
 			`Estimated Length: ${printLengthEstimate(
 				estLength,
 			)} (${((end1 - begin1) / samples).toFixed(4)}ms)`,

@@ -155,13 +155,16 @@ export function bezier3LengthEstimate(
 	recursionLimit = 10,
 ): LengthEstimate {
 	// Algorithm from kurbo (https://raphlinus.github.io/curves/2018/12/28/bezier-arclength.html / https://github.com/linebender/kurbo/blob/8e05b2e15fce702673354cfd81b232d94bea6068/kurbo/src/cubicbez.rs#L628)
-	// Kurbo license: Apache-2.0 or MIT
+	// Kurbo Copyright (c) 2018 Raph Levien, available as Apache-2.0 or MIT
 
 	const d01 = ptSub(curve.c1, curve.p0);
 	const d12 = ptSub(curve.c2, curve.c1);
 	const d23 = ptSub(curve.p3, curve.c2);
 	const chord = ptDist(curve.p0, curve.p3);
 	const polygon = ptLen(d01) + ptLen(d12) + ptLen(d23);
+	if (polygon - chord < maxError * 2) {
+		return { best: (polygon + chord) * 0.5, maxError };
+	}
 	const lp_lc = polygon - chord;
 	const dd1 = ptSub(d12, d01);
 	const dd2 = ptSub(d23, d12);
@@ -272,7 +275,7 @@ export const bezier3SVG = (
 	)} ${ptSVG(curve.c2, precision)} ${ptSVG(curve.p3, precision)}`;
 
 // Constants source: https://github.com/linebender/kurbo/blob/8e05b2e15fce702673354cfd81b232d94bea6068/kurbo/src/common.rs#L814
-// Kurbo license: Apache-2.0 or MIT
+// Kurbo Copyright (c) 2018 Raph Levien, available as Apache-2.0 or MIT
 const GAUSS_LEGENDRE_COEFFS_8_HALF: [number, number][] = [
 	[0.362683783378362, 0.1834346424956498],
 	[0.3137066458778873, 0.525532409916329],

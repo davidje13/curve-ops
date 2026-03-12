@@ -2,6 +2,31 @@ body {
 	background: #eeeeee;
 }
 
+.item {
+	display: inline-block;
+	margin: 10px;
+	vertical-align: top;
+}
+
+.graph {
+	display: inline-block;
+	border: 1px solid black;
+	background: #ff0000;
+}
+
+.scale {
+	display: inline-block;
+	border: 1px solid black;
+}
+
+.options {
+	display: block;
+}
+
+input[type='number'] {
+	width: 50px;
+}
+
 .playground {
 	display: inline-block;
 	position: relative;

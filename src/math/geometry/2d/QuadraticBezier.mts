@@ -1,7 +1,10 @@
-import type { Line } from './Line.mts';
+import { internalLineScaledNormalisation, type Line } from './Line.mts';
 import {
 	ptAdd,
 	ptDist,
+	ptDot,
+	ptLen,
+	ptLen2,
 	ptLerp,
 	ptMad,
 	ptMid,
@@ -45,8 +48,8 @@ export function bezier2YAt({ p0, c1, p2 }: QuadraticBezier, t: number): number {
 }
 
 export const bezier2Derivative = ({ p0, c1, p2 }: QuadraticBezier): Line => ({
-	p0: ptSub(c1, p0),
-	p1: ptSub(p2, c1),
+	p0: ptMul(ptSub(c1, p0), 2),
+	p1: ptMul(ptSub(p2, c1), 2),
 });
 
 export const bezier2Translate = (
@@ -61,30 +64,77 @@ export const bezier2Translate = (
 export function bezier2LengthEstimate(
 	curve: QuadraticBezier,
 	maxError = Number.POSITIVE_INFINITY,
-	recursionLimit = 20,
 ): LengthEstimate {
-	// thanks, Adaptive subdivision and the length and energy of Bézier curves [Jens Gravesen]
-
-	const chord = ptDist(curve.p2, curve.p0);
-	const polygon = ptDist(curve.p0, curve.c1) + ptDist(curve.c1, curve.p2);
-
-	const err = (polygon - chord) * (2 / 3);
-	if (err > maxError && recursionLimit > 0) {
-		const [s0, s1] = bezier2Bisect(curve);
-		const se = maxError * 0.5;
-		const sr = recursionLimit - 1;
-		const l1 = bezier2LengthEstimate(s0, se, sr);
-		const l2 = bezier2LengthEstimate(s1, maxError - l1.maxError, sr);
+	const norm = internalLineScaledNormalisation({ p0: curve.p0, p1: curve.p2 });
+	if (!norm) {
+		const best = ptDist(curve.p0, curve.c1);
+		return { best, maxError: best * Number.EPSILON };
+	}
+	const lChord = Math.sqrt(norm.scale2);
+	const nC1 = norm.fn(curve.c1);
+	const nnC1 = { x: nC1.x > 0.5 ? 1 - nC1.x : nC1.x, y: Math.abs(nC1.y) };
+	if (nnC1.y < 2 * maxError * lChord) {
+		const X = 0.5 - nnC1.x;
+		const best = X > 0.5 ? X + 0.25 / X : 1;
 		return {
-			best: l1.best + l2.best,
-			maxError: l1.maxError + l2.maxError,
+			best: best * lChord,
+			maxError: (nnC1.y * 0.5 + best * Number.EPSILON) * lChord,
+		};
+	}
+	if (norm.scale2 < 16 * Number.EPSILON) {
+		const lPolygon = ptDist(curve.p0, curve.c1) + ptDist(curve.c1, curve.p2);
+		const best = (lPolygon * 2 + lChord) * 0.25;
+		const err =
+			Math.min(lChord, lPolygon - lChord) * 0.25 + best * Number.EPSILON;
+		if (err > maxError && lPolygon > lChord * 2) {
+			const [b1, b2] = bezier2Bisect(curve);
+			const est1 = bezier2LengthEstimate(b1, maxError * 0.5);
+			const est2 = bezier2LengthEstimate(b2, maxError - est1.maxError);
+			return {
+				best: est1.best + est2.best,
+				maxError: est1.maxError + est2.maxError,
+			};
+		}
+		return { best, maxError: err };
+	}
+
+	const derivative1p0 = { x: nnC1.x * 2, y: nnC1.y * 2 };
+	const derivative2 = { x: 2 - derivative1p0.x * 2, y: -derivative1p0.y * 2 };
+	const AA = ptLen2(derivative2);
+
+	// thanks, https://raphlinus.github.io/curves/2018/12/28/bezier-arclength.html
+	if (AA < 1e-3) {
+		const x = derivative2.x * 0.5;
+		const y = derivative2.y * 0.5;
+		const l2 = x * x + y * y;
+		const l4 = l2 * l2;
+		const l8 = l4 * l4;
+
+		let len = 0;
+		for (const [wi, xi] of GAUSS_LEGENDRE_COEFFS_7) {
+			len += wi * ptLen(ptMad(derivative2, 0.5 * xi + 0.5, derivative1p0));
+		}
+		return {
+			best: len * lChord * 0.5,
+			maxError:
+				0.025 *
+				(ptLen(nnC1) + ptDist(nnC1, { x: 1, y: 0 }) - 1) *
+				Math.tanh(l8 * l8) *
+				lChord,
 		};
 	}
 
-	return {
-		best: (2 * chord + polygon) * (1 / 3),
-		maxError: err,
-	};
+	const BB_AA = ptDot(derivative2, derivative1p0) / AA;
+	const CC_AA = ptLen2(derivative1p0) / AA;
+	const C_A = Math.sqrt(CC_AA);
+	const L_A = Math.sqrt(1 + 2 * BB_AA + CC_AA);
+
+	const m = CC_AA - BB_AA * BB_AA;
+	const v = (1 + BB_AA + L_A) * (C_A - BB_AA);
+	const num = (1 + BB_AA) * L_A - BB_AA * C_A + m * Math.log(v / m);
+
+	const scale = Math.sqrt(AA) * lChord * 0.5;
+	return { best: num * scale, maxError: 1e-14 * scale };
 }
 
 export function bezier2Bisect(
@@ -144,3 +194,15 @@ interface LengthEstimate {
 	best: number;
 	maxError: number;
 }
+
+// Constants source: https://github.com/linebender/kurbo/blob/8e05b2e15fce702673354cfd81b232d94bea6068/kurbo/src/common.rs#L804
+// Kurbo Copyright (c) 2018 Raph Levien, available as Apache-2.0 or MIT
+const GAUSS_LEGENDRE_COEFFS_7: [number, number][] = [
+	[0.4179591836734694, 0],
+	[0.3818300505051189, 0.4058451513773972],
+	[0.3818300505051189, -0.4058451513773972],
+	[0.2797053914892766, -0.7415311855993945],
+	[0.2797053914892766, 0.7415311855993945],
+	[0.1294849661688697, -0.9491079123427585],
+	[0.1294849661688697, 0.9491079123427585],
+];

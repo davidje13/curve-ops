@@ -1,14 +1,10 @@
 import {
-	type CubicBezier,
 	type Pt,
 	bezier3At,
 	bezier3LengthEstimate,
 	bezier3Normalise,
-	bezier3Split,
 	bezier3SVG,
 	bezier3TangentAt,
-	bezier3XTurningPointTs,
-	bezier3YTurningPointTs,
 	circleSVG,
 	CurveDrawer,
 	intersectBezier3Circle,
@@ -16,11 +12,7 @@ import {
 	leastSquaresFitCubicFixEnds,
 	lineFromPts,
 	nBezier3Area,
-	nBezier3InflectionTs,
 	nBezier3Moment,
-	PT0,
-	ptDist,
-	ptDist2,
 	ptLerp,
 	ptMad,
 	ptMul,
@@ -30,6 +22,7 @@ import {
 	rectFromLine,
 	rectSVG,
 } from '../index.mts';
+import { grabbable, mk, mkSVG } from './dom.mts';
 import { DragHandler } from './DragHandler.mts';
 
 (() => {
@@ -41,7 +34,7 @@ import { DragHandler } from './DragHandler.mts';
 	});
 	const pathLive = mkSVG('path', { class: 'live' });
 
-	document.body.append(mk('div', { class: 'playground draw' }, [svg]));
+	document.body.append(mk('div', { class: 'item playground draw' }, [svg]));
 
 	const drawer = new CurveDrawer(
 		() => svg.replaceChildren(pathLive),
@@ -91,7 +84,7 @@ import { DragHandler } from './DragHandler.mts';
 	const dcN = mk('div', { class: 'ctl end' });
 
 	document.body.append(
-		mk('div', { class: 'playground' }, [svg, dcprev, dc0, ...dcs, dcN]),
+		mk('div', { class: 'item playground' }, [svg, dcprev, dc0, ...dcs, dcN]),
 	);
 
 	const pts: Pt[] = [];
@@ -133,7 +126,6 @@ import { DragHandler } from './DragHandler.mts';
 
 	const pathCtl = mkSVG('path', { class: 'ctl' });
 	const pathCurve = mkSVG('path', { class: 'curve' });
-	const pathSplits = mkSVG('path', { class: 'split' });
 	const pathIntersections = mkSVG('path', { class: 'intersections' });
 	const svg = mkSVG(
 		'svg',
@@ -148,7 +140,6 @@ import { DragHandler } from './DragHandler.mts';
 			mkSVG('path', { class: 'intersection-shape', d: rectSVG(box) }),
 			pathCtl,
 			pathCurve,
-			pathSplits,
 			pathIntersections,
 		],
 	);
@@ -159,8 +150,10 @@ import { DragHandler } from './DragHandler.mts';
 	const out = mk('pre');
 
 	document.body.append(
-		mk('div', { class: 'playground' }, [svg, dc0, dc1, dc2, dc3]),
-		out,
+		mk('div', { class: 'item' }, [
+			mk('div', { class: 'playground' }, [svg, dc0, dc1, dc2, dc3]),
+			out,
+		]),
 	);
 
 	function update() {
@@ -170,19 +163,6 @@ import { DragHandler } from './DragHandler.mts';
 
 		const norm = bezier3Normalise(bezier);
 		const normBezier = norm.curve;
-
-		const curveInflectionTs = nBezier3InflectionTs(normBezier);
-		const curveXLimTs = bezier3XTurningPointTs(normBezier);
-		const curveYLimTs = bezier3YTurningPointTs(normBezier);
-
-		const splits = [...curveInflectionTs, ...curveXLimTs, ...curveYLimTs]
-			.filter((t) => t > 0 && t < 1)
-			.sort();
-
-		pathSplits.setAttribute(
-			'd',
-			splits.map((t) => `M${ptSVG(bezier3At(bezier, t))}v0.001`).join(''),
-		);
 
 		const intersectionsCircle = intersectBezier3Circle(bezier, circle, 1e-2);
 		const intersectionsBox = intersectBezier3Rect(bezier, box);
@@ -207,33 +187,9 @@ import { DragHandler } from './DragHandler.mts';
 
 		const scale = Math.sqrt(norm.scale2);
 		const maxError = 1e-4;
-		const samples = 1000;
-		const begin1 = performance.now();
-		for (let r = 0; r < samples; ++r) {
-			bezier3LengthEstimate(bezier, maxError);
-		}
-		const end1 = performance.now();
-		const begin2 = performance.now();
-		for (let r = 0; r < samples; ++r) {
-			guidedLengthEstimate(bezier, maxError, curveXLimTs);
-		}
-		const end2 = performance.now();
 		out.innerText = [
 			`Area: ${(curveArea * scale * scale).toFixed(3)}`,
-			`Estimated Length [${maxError.toPrecision(1)}]: ${printLengthEstimate(
-				bezier3LengthEstimate(bezier, maxError),
-			)} (${((end1 - begin1) / samples).toFixed(4)}ms)`,
-			`Guided Estimated Length [${maxError.toPrecision(
-				1,
-			)}]: ${printLengthEstimate(
-				guidedLengthEstimate(bezier, maxError, curveXLimTs),
-			)} (${((end2 - begin2) / samples).toFixed(4)}ms)`,
-			`True Length: ${measureFunction(
-				bezier3At.bind(null, bezier),
-				0,
-				1,
-				1e6,
-			).toFixed(6)}`,
+			`Length: ${printLengthEstimate(bezier3LengthEstimate(bezier, maxError))}`,
 			`Moment: ${(curveMoment * scale * scale * scale).toFixed(3)}`,
 		].join('\n');
 	}
@@ -244,98 +200,3 @@ import { DragHandler } from './DragHandler.mts';
 	const p3 = grabbable(dc3, update, { x: 0.7, y: 0.9 });
 	update();
 })();
-
-function guidedLengthEstimate(
-	curve: CubicBezier,
-	maxError: number,
-	splits: number[],
-	recursionLimit = 10,
-) {
-	const est0 = bezier3LengthEstimate(curve, maxError, 0);
-
-	if (est0.maxError > maxError && recursionLimit > 0) {
-		// sort sub-curve small-to-large so that we can give greatest error tolerance to the larger curves
-		const s = bezier3Split(curve, splits).sort(
-			(a, b) => ptDist2(a.p0, a.p3) - ptDist2(b.p0, b.p3),
-		);
-		if (s.length > 1) {
-			const sr = recursionLimit - 1;
-			const l = { best: 0, maxError: 0 };
-			for (let i = 0; i < s.length; ++i) {
-				const se = (maxError - l.maxError) / (s.length - i);
-				const est = bezier3LengthEstimate(s[i]!, se, sr);
-				l.best += est.best;
-				l.maxError += est.maxError;
-			}
-			return l;
-		}
-		return bezier3LengthEstimate(curve, maxError, recursionLimit);
-	}
-
-	return est0;
-}
-
-function measureFunction(
-	f: (t: number) => Pt,
-	start: number,
-	end: number,
-	steps: number,
-) {
-	let sum = 0;
-	let prev = f(start);
-	const range = end - start;
-	for (let i = 1; i <= steps; ++i) {
-		const p = start + range * (i / steps);
-		const pt = f(p);
-		sum += ptDist(pt, prev);
-		prev = pt;
-	}
-	return sum;
-}
-
-function grabbable(o: HTMLElement, update: () => void, initial: Pt = PT0): Pt {
-	const r = { ...initial };
-	const draw = () => {
-		o.style.left = `${r.x * 100}%`;
-		o.style.top = `${r.y * 100}%`;
-	};
-	const move = (p: Pt) => {
-		r.x = p.x;
-		r.y = p.y;
-		draw();
-		update();
-	};
-	const handler = new DragHandler(o.parentElement!, 1, 1, move, move, () => {});
-	o.addEventListener('pointerdown', handler.begin);
-	draw();
-	return r;
-}
-
-function mk(
-	type: string,
-	attrs: Record<string, string | number> = {},
-	children: (string | Element)[] = [],
-) {
-	const o: HTMLElement = document.createElement(type);
-	for (const k in attrs) {
-		o.setAttribute(k, String(attrs[k]));
-	}
-	o.append(...children);
-	return o;
-}
-
-function mkSVG(
-	type: string,
-	attrs: Record<string, string | number> = {},
-	children: (string | Element)[] = [],
-) {
-	const o: SVGElement = document.createElementNS(
-		'http://www.w3.org/2000/svg',
-		type,
-	);
-	for (const k in attrs) {
-		o.setAttribute(k, String(attrs[k]));
-	}
-	o.append(...children);
-	return o;
-}

@@ -1,4 +1,4 @@
-import type { Multiply } from '../types/numeric.mts';
+import type { DivideWhole, Multiply } from '../types/numeric.mts';
 import { zeros, type SizedArray } from '../util/SizedArray.mts';
 
 export interface Matrix<M extends number = number, N extends number = number> {
@@ -82,10 +82,14 @@ export function matPrint(
 	return `[ ${r.join('\n  ')} ] (${m}x${n})`;
 }
 
-export function matReshape<Dim extends number>(
-	{ v, m, n }: Matrix,
+export function matReshape<
+	M extends number,
+	N extends number,
+	Dim extends number,
+>(
+	{ v, m, n }: Matrix<M, N>,
 	newN: Dim,
-): Matrix<number, Dim> {
+): Matrix<DivideWhole<Multiply<M, N>, Dim>, Dim> {
 	const total = m * n;
 	if (total % newN) {
 		throw new Error('invalid matrix reshaping');
@@ -93,7 +97,7 @@ export function matReshape<Dim extends number>(
 	return internalMatFromFlat(v, total / newN, newN);
 }
 
-export function matTranspose<N extends number, M extends number>({
+export function matTranspose<M extends number, N extends number>({
 	v,
 	m,
 	n,

@@ -6,7 +6,6 @@ import {
 	matScale,
 	type Matrix,
 } from '../../Matrix.mts';
-import type { Quaternion } from '../../Quaternion.mts';
 import {
 	vec3Cross,
 	vecDot,
@@ -53,18 +52,4 @@ export function matFromRotationBetween(
 	const ssm = matSkewSymmetricCrossProduct(vec3Cross(fromNorm, toNorm));
 
 	return matAdd(MAT3IDENT, matAdd(ssm, matScale(matMul(ssm, ssm), 1 / scale)));
-}
-
-export function quatFromRotationAround(
-	axis: Vector<3>,
-	angle: number,
-	norm = 1,
-): Quaternion {
-	const s = Math.sin(angle * 0.5) * norm;
-	return {
-		w: Math.cos(angle * 0.5) * norm,
-		x: axis.v[0] * s,
-		y: axis.v[1] * s,
-		z: axis.v[2] * s,
-	};
 }

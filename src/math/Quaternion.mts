@@ -1,5 +1,6 @@
 import { mat4Eigenvalues, mat4Eigenvector } from './eigen.mts';
 import { matFrom, type Matrix } from './Matrix.mts';
+import type { Vector } from './Vector.mts';
 
 export interface Quaternion {
 	readonly w: number;
@@ -14,6 +15,20 @@ export const quatFrom = (w: number, x = 0, y = 0, z = 0): Quaternion => ({
 	y,
 	z,
 });
+
+export function quatFromRotationAround(
+	axis: Vector<3>,
+	angle: number,
+	norm = 1,
+): Quaternion {
+	const s = Math.sin(angle * 0.5) * norm;
+	return {
+		w: Math.cos(angle * 0.5) * norm,
+		x: axis.v[0] * s,
+		y: axis.v[1] * s,
+		z: axis.v[2] * s,
+	};
+}
 
 export function quatFromMat3Exact({
 	v: [v00, v01, v02, v10, v11, v12, v20, v21, v22],
@@ -174,7 +189,7 @@ export const quatScale = (
 
 export const quatNorm = ({ w, x, y, z }: Quaternion) => Math.hypot(w, x, y, z);
 export const quatNorm2 = ({ w, x, y, z }: Quaternion) =>
-	w * w + x * x + y * x + z * z;
+	w * w + x * x + y * y + z * z;
 export const quatVectorNorm = ({ x, y, z }: Quaternion) => Math.hypot(x, y, z);
 
 export const quatDot = (a: Quaternion, b: Quaternion) =>

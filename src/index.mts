@@ -174,7 +174,6 @@ export {
 	matFromEyeTargetUp,
 	matFromRotationBetween,
 	matSkewSymmetricCrossProduct,
-	quatFromRotationAround,
 } from './math/geometry/3d/rotation.mts';
 
 export {
@@ -305,6 +304,7 @@ export {
 	quatFrom,
 	quatFromMat3BestFit,
 	quatFromMat3Exact,
+	quatFromRotationAround,
 	quatInv,
 	quatLerp,
 	quatLerpShortestPath,

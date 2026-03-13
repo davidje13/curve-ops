@@ -16,6 +16,7 @@ import {
 	vecMad,
 	vecMid,
 	vecMul,
+	vecNorm,
 	vecReflect,
 	vecSub,
 } from './Vector.mts';
@@ -114,6 +115,17 @@ describe('vecDist', () => {
 		expect(vecDist(vecFrom(1, 2, 3), vecFrom(4, 6, 15))).isNear(13, {
 			tolerance: 1e-16,
 		});
+	});
+});
+
+describe('vecNorm', () => {
+	it('returns a normalised vector', () => {
+		expect(vecNorm(vecFrom(4, 0, 0))).equals(vecFrom(1, 0, 0));
+		expect(vecNorm(vecFrom(0, -2, 0))).equals(vecFrom(0, -1, 0));
+	});
+
+	it('accepts an optional scaling factor', () => {
+		expect(vecNorm(vecFrom(4, 0, 0), 2)).equals(vecFrom(2, 0, 0));
 	});
 });
 

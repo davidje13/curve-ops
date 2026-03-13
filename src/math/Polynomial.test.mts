@@ -1,3 +1,4 @@
+import { matFrom } from './Matrix.mts';
 import {
 	polynomial2Roots,
 	polynomial3Roots,
@@ -6,6 +7,7 @@ import {
 	polynomial7SignedRoots,
 	polynomialAdd,
 	polynomialAt,
+	polynomialCompanionMat,
 	polynomialDerivative,
 	polynomialIntegral,
 	polynomialMul,
@@ -15,6 +17,31 @@ import {
 	polynomialWithSolutions,
 } from './Polynomial.mts';
 import 'lean-test';
+
+describe('polynomialCompanionMat', () => {
+	it('returns the companion matrix for a polynomial', () => {
+		expect(polynomialCompanionMat([2, 1])).equals(matFrom([[2]]));
+
+		expect(polynomialCompanionMat([3, 2, 1])).equals(
+			matFrom([
+				[0, 3],
+				[1, 2],
+			]),
+		);
+
+		expect(polynomialCompanionMat([5, 4, 3, 2])).equals(
+			matFrom([
+				[0, 0, 2.5],
+				[1, 0, 2],
+				[0, 1, 1.5],
+			]),
+		);
+	});
+
+	it('returns an empty matrix for a constant', () => {
+		expect(polynomialCompanionMat([1])).equals(matFrom([]));
+	});
+});
 
 describe('polynomialAt', () => {
 	it('evaluates an n-th degree polynomial', () => {
@@ -157,6 +184,12 @@ describe('polynomial2Roots', () => {
 		const roots = polynomial2Roots([-2, 4], 2);
 		expect(roots).toContain(isNear(1, { tolerance }));
 		expect(roots).hasLength(1);
+	});
+
+	it('returns one solution if x^0 term is 0', () => {
+		expect(polynomial2Roots([0, 1])).equals([0]);
+		expect(polynomial2Roots([0, 2])).equals([0]);
+		expect(polynomial2Roots([0, -1])).equals([-0]);
 	});
 
 	it('returns no solutions if x^1 term is 0', () => {

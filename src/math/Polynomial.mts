@@ -4,7 +4,7 @@ import { internalMatFromFlat, type SquareMatrix } from './Matrix.mts';
 
 export type Polynomial<N extends number = number> = SizedArray<number, N>;
 
-export function polynomialCompanionMat<P extends Polynomial>(
+export function polynomialCompanionMat<const P extends Polynomial>(
 	poly: P,
 ): SquareMatrix<Decrement<P['length']>> {
 	if (!poly.length) {
@@ -36,10 +36,13 @@ export const polynomialMul = (...polynomials: Polynomial[]): Polynomial =>
 		return r;
 	});
 
-export const polynomialDerivative = <P extends Polynomial>(poly: P) =>
+export const polynomialDerivative = <const P extends Polynomial>(poly: P) =>
 	poly.map((v, i) => v * i).slice(1) as Polynomial<Decrement<P['length']>>;
 
-export const polynomialIntegral = <P extends Polynomial>(poly: P, c = 0) =>
+export const polynomialIntegral = <const P extends Polynomial>(
+	poly: P,
+	c = 0,
+) =>
 	[c, ...poly.map((v, i) => v / (i + 1))] as Polynomial<Increment<P['length']>>;
 
 export const polynomialAdd = <N extends number, M extends number>(
@@ -58,12 +61,14 @@ export const polynomialSub = <N extends number, M extends number>(
 		? a.map((av, i) => av - (b[i] ?? 0))
 		: b.map((bv, i) => (a[i] ?? 0) - bv)) as Polynomial<Max<N, M>>;
 
-export const polynomialScale = <P extends Polynomial>(
+export const polynomialScale = <const P extends Polynomial>(
 	poly: P,
 	scale: number,
 ): P => poly.map((v) => v * scale) as P;
 
-export const polynomialShift = <P extends Polynomial & [number, ...number[]]>(
+export const polynomialShift = <
+	const P extends Polynomial & [number, ...number[]],
+>(
 	poly: P,
 	shift: number,
 ): P => {

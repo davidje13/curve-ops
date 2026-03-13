@@ -410,7 +410,7 @@ describe('matScaleAdd', () => {
 });
 
 describe('matLerp', () => {
-	it('elementwise interpolates between two matrices', () => {
+	it('elementwise linearly interpolates between two matrices', () => {
 		const mat1 = matFrom([
 			[1, 2],
 			[3, 4],

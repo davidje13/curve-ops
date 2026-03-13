@@ -66,8 +66,10 @@ export const matIdent = <S extends number>(s: S) => {
 
 export function matPrint(
 	mat: Matrix | null,
-	precision = 3,
-	width = precision + 5,
+	{
+		precision = 3,
+		width = precision + 5,
+	}: { precision?: number; width?: number } = {},
 ) {
 	if (!mat) {
 		return '(null)';
@@ -273,7 +275,7 @@ export function matTrace<N extends number>(mat: SquareMatrix<N>) {
 	const s = m + 1;
 	let sum = 0;
 	for (let i = 0; i < m; ++i) {
-		sum += v[m * s]!;
+		sum += v[i * s]!;
 	}
 	return sum;
 }
@@ -283,6 +285,12 @@ export function matMinor<M extends number, N extends number>(
 	row: number,
 	col: number,
 ): Matrix<Decrement<M>, Decrement<N>> {
+	if (row < 0 || row >= m) {
+		throw new Error(`row ${row} out of bounds`);
+	}
+	if (col < 0 || col >= n) {
+		throw new Error(`column ${col} out of bounds`);
+	}
 	const newV: number[] = [];
 	for (let i = 0; i < m - 1; ++i) {
 		const p = (i + (i >= row ? 1 : 0)) * n;

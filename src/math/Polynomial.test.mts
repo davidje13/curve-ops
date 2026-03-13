@@ -2,6 +2,7 @@ import {
 	polynomial2Roots,
 	polynomial3Roots,
 	polynomial4Roots,
+	polynomial5Roots,
 	polynomial7SignedRoots,
 	polynomialAdd,
 	polynomialAt,
@@ -108,9 +109,7 @@ describe('polynomialShift', () => {
 	});
 
 	it('rejects polynomials without terms', () => {
-		expect(() => polynomialShift([] as any, 2)).throws(
-			'cannot shift empty polynomial',
-		);
+		expect(() => polynomialShift([] as any, 2)).throws('empty polynomial');
 	});
 });
 
@@ -284,6 +283,128 @@ describe('polynomial4Roots', () => {
 	it('returns no solutions if x^1, x^2, and x^3 terms are 0', () => {
 		expect(polynomial4Roots([10, 0, 0, 0])).isEmpty();
 		expect(polynomial4Roots([0, 0, 0, 0])).isEmpty();
+	});
+});
+
+describe('polynomial5Roots', () => {
+	it('solves a+bx+cx^2+dx^3+ex^4=0', () => {
+		const roots = polynomial5Roots(
+			polynomialScale(polynomialWithSolutions(1, 2, 3, 4), 2),
+		);
+		expect(roots).toContain(isNear(1, { tolerance }));
+		expect(roots).toContain(isNear(2, { tolerance }));
+		expect(roots).toContain(isNear(3, { tolerance }));
+		expect(roots).toContain(isNear(4, { tolerance }));
+		expect(roots).hasLength(4);
+	});
+
+	it('solves a+bx+cx^2+dx^3+ex^4=y', () => {
+		const roots = polynomial5Roots(
+			polynomialShift(polynomialWithSolutions(1, 2, 3, 4), 1),
+			1,
+		);
+		expect(roots).toContain(isNear(1, { tolerance }));
+		expect(roots).toContain(isNear(2, { tolerance }));
+		expect(roots).toContain(isNear(3, { tolerance }));
+		expect(roots).toContain(isNear(4, { tolerance }));
+		expect(roots).hasLength(4);
+	});
+
+	it('solves symmetric equations', () => {
+		const roots = polynomial5Roots(
+			polynomialScale(polynomialWithSolutions(-2, -1, 1, 2), 2),
+		);
+		expect(roots).toContain(isNear(-2, { tolerance }));
+		expect(roots).toContain(isNear(-1, { tolerance }));
+		expect(roots).toContain(isNear(1, { tolerance }));
+		expect(roots).toContain(isNear(2, { tolerance }));
+		expect(roots).hasLength(4);
+	});
+
+	it('returns three solutions if the equation has a repeated root (-1,-1,0,2)', () => {
+		const roots = polynomial5Roots(polynomialWithSolutions(-1, -1, 0, 2));
+		expect(roots).toContain(isNear(-1, { tolerance }));
+		expect(roots).toContain(isNear(0, { tolerance }));
+		expect(roots).toContain(isNear(2, { tolerance }));
+		expect(roots).hasLength(3);
+	});
+
+	it('returns three solutions if the equation has a repeated root (-1,0,0,1)', () => {
+		const roots = polynomial5Roots(polynomialWithSolutions(-1, 0, 0, 1));
+		expect(roots).toContain(isNear(-1, { tolerance }));
+		expect(roots).toContain(isNear(0, { tolerance }));
+		expect(roots).toContain(isNear(1, { tolerance }));
+		expect(roots).hasLength(3);
+	});
+
+	it('returns three solutions if the equation has a repeated root (-2,0,1,1)', () => {
+		const roots = polynomial5Roots(polynomialWithSolutions(-2, 0, 1, 1));
+		expect(roots).toContain(isNear(-2, { tolerance }));
+		expect(roots).toContain(isNear(0, { tolerance }));
+		expect(roots).toContain(isNear(1, { tolerance }));
+		expect(roots).hasLength(3);
+	});
+
+	it('returns two solutions if the equation has a triple repeated root (1,1,1,2)', () => {
+		const roots = polynomial5Roots(polynomialWithSolutions(1, 1, 1, 2));
+		expect(roots).toContain(isNear(1, { tolerance }));
+		expect(roots).toContain(isNear(2, { tolerance }));
+		expect(roots).hasLength(2);
+	});
+
+	it('returns two solutions if the equation has a triple repeated root (1,2,2,2)', () => {
+		const roots = polynomial5Roots(polynomialWithSolutions(1, 2, 2, 2));
+		expect(roots).toContain(isNear(1, { tolerance }));
+		expect(roots).toContain(isNear(2, { tolerance }));
+		expect(roots).hasLength(2);
+	});
+
+	it('returns one solution if the equation has a quad repeated root (1,1,1,1)', () => {
+		const roots = polynomial5Roots(polynomialWithSolutions(1, 1, 1, 1));
+		expect(roots).toContain(isNear(1, { tolerance }));
+		expect(roots).hasLength(1);
+	});
+
+	it('returns a simple solution if x^1, x^2, and x^3 terms are 0', () => {
+		const roots1 = polynomial5Roots([0, 0, 0, 0, 1]);
+		expect(roots1).toContain(isNear(0, { tolerance }));
+		expect(roots1).hasLength(1);
+
+		const roots2 = polynomial5Roots([-1, 0, 0, 0, 1]);
+		expect(roots2).toContain(isNear(1, { tolerance }));
+		expect(roots2).toContain(isNear(-1, { tolerance }));
+		expect(roots2).hasLength(2);
+
+		const roots2b = polynomial5Roots([0, 0, 0, 0, 1], 1);
+		expect(roots2b).toContain(isNear(1, { tolerance }));
+		expect(roots2b).toContain(isNear(-1, { tolerance }));
+		expect(roots2b).hasLength(2);
+	});
+
+	it('returns a cubic solution if x^4 term is 0', () => {
+		const roots = polynomial5Roots([-6, 11, -6, 1, 0]);
+		expect(roots).toContain(isNear(1, { tolerance }));
+		expect(roots).toContain(isNear(2, { tolerance }));
+		expect(roots).toContain(isNear(3, { tolerance }));
+		expect(roots).hasLength(3);
+	});
+
+	it('returns a quadratic solution if x^3 and x^4 terms are 0', () => {
+		const roots = polynomial5Roots([16, -12, 2, 0, 0]);
+		expect(roots).toContain(isNear(2, { tolerance }));
+		expect(roots).toContain(isNear(4, { tolerance }));
+		expect(roots).hasLength(2);
+	});
+
+	it('returns a linear solution if x^2, x^3, and x^4 terms are 0', () => {
+		const roots = polynomial5Roots([-2, 4, 0, 0, 0]);
+		expect(roots).toContain(isNear(0.5, { tolerance }));
+		expect(roots).hasLength(1);
+	});
+
+	it('returns no solutions if x^1, x^2, x^3, and x^4 terms are 0', () => {
+		expect(polynomial5Roots([10, 0, 0, 0, 0])).isEmpty();
+		expect(polynomial5Roots([0, 0, 0, 0, 0])).isEmpty();
 	});
 });
 

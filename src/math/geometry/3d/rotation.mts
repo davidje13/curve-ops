@@ -7,7 +7,13 @@ import {
 	type Matrix,
 } from '../../Matrix.mts';
 import type { Quaternion } from '../../Quaternion.mts';
-import { vec3Cross, vecDot, vecNorm, vecSub, type Vector } from '../Vector.mts';
+import {
+	vec3Cross,
+	vecDot,
+	vecNorm,
+	vecSub,
+	type Vector,
+} from '../../Vector.mts';
 
 export function matFromEyeTargetUp(
 	eye: Vector<3>,
@@ -56,9 +62,9 @@ export function quatFromRotationAround(
 ): Quaternion {
 	const s = Math.sin(angle * 0.5) * norm;
 	return {
+		w: Math.cos(angle * 0.5) * norm,
 		x: axis.v[0] * s,
 		y: axis.v[1] * s,
 		z: axis.v[2] * s,
-		w: Math.cos(angle * 0.5) * norm,
 	};
 }

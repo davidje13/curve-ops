@@ -10,9 +10,10 @@ import {
 	matLeftInverse,
 	matMul,
 	type Matrix,
+	type SquareMatrix,
 } from '../Matrix.mts';
 import type { Polynomial } from '../Polynomial.mts';
-import { vec3Cross, vecAdd, vecNorm, type Vector } from './Vector.mts';
+import { vec3Cross, vecAdd, vecNorm, type Vector } from '../Vector.mts';
 
 export type Bezier<Points extends number, Dim extends number> = Matrix<
 	Points,
@@ -109,10 +110,10 @@ export function bezierLowerOrder<Points extends number, Dim extends number>(
 const BEZIER_M_CACHE = /*@__PURE__*/ new Map<number, Matrix>();
 export function bezierM<Points extends number>(
 	n: Points,
-): Matrix<Points, Points> {
+): SquareMatrix<Points> {
 	const cached = BEZIER_M_CACHE.get(n);
 	if (cached) {
-		return cached as Matrix<Points, Points>;
+		return cached as SquareMatrix<Points>;
 	}
 	const v = zeros(n * n);
 	for (let i = 0; i < n; ++i) {
@@ -130,10 +131,10 @@ export function bezierM<Points extends number>(
 const BEZIER_M_INV_CACHE = /*@__PURE__*/ new Map<number, Matrix>();
 export function bezierMInv<Points extends number>(
 	n: Points,
-): Matrix<Points, Points> {
+): SquareMatrix<Points> {
 	const cached = BEZIER_M_INV_CACHE.get(n);
 	if (cached) {
-		return cached as Matrix<Points, Points>;
+		return cached as SquareMatrix<Points>;
 	}
 	const Minv = matInverse(bezierM(n));
 	if (!Minv) {
@@ -197,7 +198,7 @@ export function bezierBisect<Points extends number, Dim extends number>(
 	const s = curve.m;
 	const M = bezierM(s);
 	const Minv = bezierMInv(s);
-	const Z = matFromDiag(powers(t, s)) as Matrix<Points, Points>;
+	const Z = matFromDiag(powers(t, s)) as SquareMatrix<Points>;
 	const Q1 = matMul(matMul(Minv, Z), M);
 	const q2v: number[] = [];
 	for (let i = 0; i < s; ++i) {

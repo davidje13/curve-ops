@@ -1,6 +1,6 @@
 import type { SizedArray } from '../../../util/SizedArray.mts';
 import { internalMatFromFlat, type Matrix } from '../../Matrix.mts';
-import type { Vector } from '../Vector.mts';
+import type { Vector } from '../../Vector.mts';
 
 export interface Pt {
 	readonly x: number;

@@ -1,4 +1,4 @@
-import type { SizedArray } from '../../util/SizedArray.mts';
+import type { SizedArray } from '../util/SizedArray.mts';
 import {
 	internalMatFromFlat,
 	matAdd,
@@ -8,7 +8,7 @@ import {
 	matScaleAdd,
 	matSub,
 	type Matrix,
-} from '../Matrix.mts';
+} from './Matrix.mts';
 
 export type Vector<Dim extends number = number> = Matrix<1, Dim>;
 

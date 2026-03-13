@@ -1,5 +1,5 @@
 import type { Matrix } from '../../Matrix.mts';
-import { vecFrom, type Vector } from '../Vector.mts';
+import { vecFrom, type Vector } from '../../Vector.mts';
 
 export function matProjectVec3(
 	{

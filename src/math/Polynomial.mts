@@ -1,7 +1,26 @@
 import type { Decrement, Increment, Max } from '../types/numeric.mts';
 import { zeros, type SizedArray } from '../util/SizedArray.mts';
+import { internalMatFromFlat, type SquareMatrix } from './Matrix.mts';
 
 export type Polynomial<N extends number = number> = SizedArray<number, N>;
+
+export function polynomialCompanionMat<P extends Polynomial>(
+	poly: P,
+): SquareMatrix<Decrement<P['length']>> {
+	if (!poly.length) {
+		throw new Error('empty polynomial');
+	}
+	const n = poly.length - 1;
+	const m = 1 / poly[n]!;
+	const v = zeros(n * n);
+	for (let i = 0; i < n - 1; ++i) {
+		v[(i + 1) * n + i] = 1;
+	}
+	for (let i = 0; i < n; ++i) {
+		v[(i + 1) * n - 1] = poly[i]! * m;
+	}
+	return internalMatFromFlat(v, n, n);
+}
 
 export const polynomialAt = (poly: Polynomial, t: number): number =>
 	poly.reduceRight((v, n) => v * t + n, 0);
@@ -49,7 +68,7 @@ export const polynomialShift = <P extends Polynomial & [number, ...number[]]>(
 	shift: number,
 ): P => {
 	if (!poly.length) {
-		throw new Error('cannot shift empty polynomial');
+		throw new Error('empty polynomial');
 	}
 	const r = [...poly];
 	r[0]! += shift;
@@ -85,6 +104,8 @@ export function polynomialRoots(
 			return filter(polynomial3Roots(poly as Polynomial<3>, y));
 		case 4:
 			return filter(polynomial4Roots(poly as Polynomial<4>, y));
+		case 5:
+			return filter(polynomial5Roots(poly as Polynomial<5>, y));
 		case 7:
 			return polynomial7SignedRoots(poly as Polynomial<7>, y, bounds).map(
 				(v) => v[0],
@@ -94,10 +115,15 @@ export function polynomialRoots(
 	}
 }
 
-export const polynomial2Roots = ([f0, f1]: Polynomial<2>, y = 0): number[] =>
-	f1 ? [(y - f0) / f1] : [];
+export const polynomial2Roots = (
+	[f0, f1]: Polynomial<2>,
+	y = 0,
+): [number] | [] => (f1 ? [(y - f0) / f1] : []);
 
-export function polynomial3Roots([f0, f1, f2]: Polynomial<3>, y = 0): number[] {
+export function polynomial3Roots(
+	[f0, f1, f2]: Polynomial<3>,
+	y = 0,
+): [number, number] | [number] | [] {
 	if (!f2) {
 		return polynomial2Roots([f0, f1], y);
 	}
@@ -116,13 +142,13 @@ export function polynomial3Roots([f0, f1, f2]: Polynomial<3>, y = 0): number[] {
 export function polynomial4Roots(
 	[f0, f1, f2, f3]: Polynomial<4>,
 	y = 0,
-): number[] {
+): [number, number, number] | [number, number] | [number] | [] {
 	if (!f3) {
 		return polynomial3Roots([f0, f1, f2], y);
 	}
 
 	// thanks, https://pomax.github.io/bezierinfo/#extremities
-	// a->f2	b->f1	c->f0	d->f3
+	// a->f2 b->f1 c->f0 d->f3
 
 	const m = 1 / f3;
 	const s = f2 * m * (1 / 3);
@@ -152,6 +178,76 @@ export function polynomial4Roots(
 
 	const root = Math.sqrt(disc);
 	return [Math.cbrt(root - q) - Math.cbrt(root + q) - s];
+}
+
+export function polynomial5Roots(
+	[f0, f1, f2, f3, f4]: Polynomial<5>,
+	y = 0,
+):
+	| [number, number, number, number]
+	| [number, number, number]
+	| [number, number]
+	| [number]
+	| [] {
+	if (!f4) {
+		return polynomial4Roots([f0, f1, f2, f3], y);
+	}
+
+	if (!f1 && !f2 && !f3) {
+		const v = (y - f0) / f4;
+		if (Math.abs(v) < Number.EPSILON) {
+			return [0];
+		} else if (v < 0) {
+			return [];
+		} else {
+			const r = Math.sqrt(Math.sqrt(v));
+			return [-r, r];
+		}
+	}
+
+	// thanks, https://en.wikipedia.org/wiki/Quartic_function#Descartes'_solution
+
+	// depressed quartic: y^4 + py^2 + qy + r = 0
+	const if4 = 0.25 / f4;
+	const shift = f3 * if4;
+	const if44 = if4 * if4;
+	const f33_44 = f3 * f3 * if44;
+	const f2_4 = f2 * if4;
+	const p = 4 * f2_4 - 6 * f33_44;
+	const q = 4 * (2 * (f33_44 - f2_4) * f3 + f1) * if4;
+	const r =
+		4 * ((f2_4 - 0.75 * f33_44) * f33_44 + (f0 - y) * if4 - f1 * f3 * if44);
+
+	const U = polynomial4Roots([-q * q, p * p - 4 * r, 2 * p, 1]).sort(
+		DESCENDING,
+	)[0];
+	if (U === undefined || U < Number.EPSILON) {
+		if (Math.abs(q) > Number.EPSILON) {
+			return [];
+		} else if (p < -Number.EPSILON) {
+			const v = Math.sqrt(-2 / p);
+			return [-v - shift, v - shift];
+		} else if (p < Number.EPSILON) {
+			return [-shift];
+		} else {
+			return [];
+		}
+	}
+	const u = Math.sqrt(U);
+	const mid = (p + U) * u;
+	const combinedRoots = [
+		...polynomial3Roots([0.5 * (mid + q), -U, u]),
+		...polynomial3Roots([0.5 * (mid - q), U, u]),
+	].sort(ASCENDING);
+	const roots: number[] = [];
+	let prev = Number.NEGATIVE_INFINITY;
+	for (const root of combinedRoots) {
+		if (root > prev + Number.EPSILON) {
+			roots.push(root - shift);
+			prev = root;
+		}
+	}
+	return roots as any;
 }
 
 export function polynomial7SignedRoots(
@@ -236,4 +332,8 @@ export function polynomial7SignedRoots(
 	return solutions;
 }
 
+// could use https://en.wikipedia.org/wiki/Durand%E2%80%93Kerner_method to solve arbitrary polynomials
+
 const NO_FILTER = (l: number[]) => l;
+const ASCENDING = (a: number, b: number) => a - b;
+const DESCENDING = (a: number, b: number) => b - a;

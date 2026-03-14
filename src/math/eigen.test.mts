@@ -1,3 +1,4 @@
+import { matchesDirectionOf } from '../test-helpers/matchesDirectionOf.mts';
 import { matEigenvalues, matEigenvector } from './eigen.mts';
 import { matFrom, matFromDiag, matIdent, matZero } from './Matrix.mts';
 import { vecFrom } from './Vector.mts';
@@ -136,19 +137,21 @@ describe('matEigenvalues', () => {
 });
 
 describe('matEigenvector', () => {
-	// TODO
-	it.ignore(
-		'returns an eigenvector for a given 2x2 matrix and eigenvalue',
-		() => {
-			const mat = matFrom([
-				[2, 1],
-				[1, 2],
-			]);
+	it('returns an eigenvector for a given 2x2 matrix and eigenvalue', () => {
+		const mat = matFrom([
+			[2, 1],
+			[1, 2],
+		]);
 
-			expect(matEigenvector(mat, 3)).equals(vecFrom(1, 1));
-			expect(matEigenvector(mat, 1)).equals(vecFrom(-1, 1));
-		},
-	);
+		expect(
+			matEigenvector(mat, 3),
+			matchesDirectionOf(vecFrom(1, 1), EIGENVEC_TOLERANCE),
+		);
+		expect(
+			matEigenvector(mat, 1),
+			matchesDirectionOf(vecFrom(-1, 1), EIGENVEC_TOLERANCE),
+		);
+	});
 
 	// TODO
 	it.ignore(
@@ -160,9 +163,18 @@ describe('matEigenvector', () => {
 				[2, 1, 3],
 			]);
 
-			expect(matEigenvector(mat, 6)).equals(vecFrom(1, 1, 1));
-			expect(matEigenvector(mat, 2)).equals(vecFrom(-1, -1, 3));
-			expect(matEigenvector(mat, 1)).equals(vecFrom(-3, 2, 2));
+			expect(
+				matEigenvector(mat, 6),
+				matchesDirectionOf(vecFrom(1, 1, 1), EIGENVEC_TOLERANCE),
+			);
+			expect(
+				matEigenvector(mat, 2),
+				matchesDirectionOf(vecFrom(-1, -1, 3), EIGENVEC_TOLERANCE),
+			);
+			expect(
+				matEigenvector(mat, 1),
+				matchesDirectionOf(vecFrom(-3, 2, 2), EIGENVEC_TOLERANCE),
+			);
 		},
 	);
 
@@ -177,10 +189,22 @@ describe('matEigenvector', () => {
 				[0, 0, 0, 4],
 			]);
 
-			expect(matEigenvector(mat, 4)).equals(vecFrom(2, 1, 1, 2));
-			expect(matEigenvector(mat, 3)).equals(vecFrom(1, 0, 1, 0));
-			expect(matEigenvector(mat, 2)).equals(vecFrom(0, -1, 1, 0));
-			expect(matEigenvector(mat, 1)).equals(vecFrom(1, 0, 0, 0));
+			expect(
+				matEigenvector(mat, 4),
+				matchesDirectionOf(vecFrom(2, 1, 1, 2), EIGENVEC_TOLERANCE),
+			);
+			expect(
+				matEigenvector(mat, 3),
+				matchesDirectionOf(vecFrom(1, 0, 1, 0), EIGENVEC_TOLERANCE),
+			);
+			expect(
+				matEigenvector(mat, 2),
+				matchesDirectionOf(vecFrom(0, -1, 1, 0), EIGENVEC_TOLERANCE),
+			);
+			expect(
+				matEigenvector(mat, 1),
+				matchesDirectionOf(vecFrom(1, 0, 0, 0), EIGENVEC_TOLERANCE),
+			);
 		},
 	);
 
@@ -192,3 +216,8 @@ describe('matEigenvector', () => {
 		expect(matEigenvector(matFrom([[4]]), 1000)).equals(vecFrom(1));
 	});
 });
+
+const EIGENVEC_TOLERANCE = {
+	minLength: 0.1,
+	allowNegative: true,
+};

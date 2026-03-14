@@ -221,6 +221,10 @@ describe('matPrint', () => {
 	it('stringifies a 0x0 matrix', () => {
 		expect(matPrint(matFrom([]))).equals('[  ] (0x0)');
 	});
+
+	it('stringifies null', () => {
+		expect(matPrint(null)).equals('(null)');
+	});
 });
 
 describe('matReshape', () => {

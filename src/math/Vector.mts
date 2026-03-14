@@ -40,6 +40,16 @@ export const matFromVecArray = <
 		vecs[0]?.n ?? (0 as Dim),
 	);
 
+export function vecPrint(
+	vec: Vector | null,
+	{ precision = 3 }: { precision?: number } = {},
+) {
+	if (!vec) {
+		return '(null)';
+	}
+	return `{${vec.v.map((t) => t.toFixed(precision)).join(', ')}}`;
+}
+
 export function vecDot<Dim extends number>(a: Vector<Dim>, b: Vector<Dim>) {
 	assertVecSizeSame(a, b, '.');
 	let r = 0;

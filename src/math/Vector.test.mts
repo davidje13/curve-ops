@@ -17,6 +17,7 @@ import {
 	vecMid,
 	vecMul,
 	vecNorm,
+	vecPrint,
 	vecReflect,
 	vecSub,
 } from './Vector.mts';
@@ -49,6 +50,26 @@ describe('matFromVecArray', () => {
 				[4, 5, 6],
 			]),
 		);
+	});
+});
+
+describe('vecPrint', () => {
+	it('stringifies a vector', () => {
+		expect(vecPrint(vecFrom(1, 2, 3))).equals('{1.000, 2.000, 3.000}');
+	});
+
+	it('allows customised precision', () => {
+		expect(vecPrint(vecFrom(1, 2, 3), { precision: 1 })).equals(
+			'{1.0, 2.0, 3.0}',
+		);
+	});
+
+	it('stringifies a 0-d vector', () => {
+		expect(vecPrint(vecFrom())).equals('{}');
+	});
+
+	it('stringifies null', () => {
+		expect(vecPrint(null)).equals('(null)');
 	});
 });
 

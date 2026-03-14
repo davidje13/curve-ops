@@ -86,7 +86,7 @@ export const mat2Eigenvector = (
 	{ v: [v00, v01, v10, v11] }: SquareMatrix<2>,
 	v: number,
 ) =>
-	Math.abs(v10) > Math.abs(v01) ? vecFrom(v00 - v, v10) : vecFrom(v01, v11 - v);
+	Math.abs(v10) > Math.abs(v01) ? vecFrom(v - v11, v10) : vecFrom(v01, v - v00);
 
 // May be worth implementing https://www.geometrictools.com/Documentation/RobustEigenSymmetric3x3.pdf for symmetrix 3x3 matrices
 

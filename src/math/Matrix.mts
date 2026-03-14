@@ -75,9 +75,9 @@ export function matPrint(
 		return '(null)';
 	}
 	const { v, m, n } = mat;
-	let r = [];
+	let r: string[] = [];
 	for (let i = 0; i < m; ++i) {
-		const row = [];
+		const row: string[] = [];
 		for (let j = 0; j < n; ++j) {
 			row.push(v[i * n + j]!.toFixed(precision).padStart(width, ' '));
 		}

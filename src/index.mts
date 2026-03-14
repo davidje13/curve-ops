@@ -345,6 +345,7 @@ export {
 	vecMid,
 	vecMul,
 	vecNorm,
+	vecPrint,
 	vecReflect,
 	vecSub,
 } from './math/Vector.mts';

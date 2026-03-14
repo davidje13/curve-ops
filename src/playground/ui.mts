@@ -22,10 +22,7 @@ import {
 	rectFromLine,
 	rectSVG,
 } from '../index.mts';
-import {
-	bezier3FromPts,
-	bezier3FromQuad,
-} from '../math/geometry/2d/CubicBezier.mts';
+import { bezier3FromPts } from '../math/geometry/2d/CubicBezier.mts';
 import { grabbable, mk, mkSVG } from './dom.mts';
 import { DragHandler } from './DragHandler.mts';
 

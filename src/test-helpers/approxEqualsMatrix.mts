@@ -27,7 +27,7 @@ export function approxEqualsMatrix(
 		for (let i = 0; i < expected.m * expected.n; ++i) {
 			const expectedV = expected.v[i]!;
 			const actualV = actual.v[i];
-			if (Math.abs(expectedV - actualV) > tolerance) {
+			if (Math.abs(expectedV - actualV) > tolerance || Number.isNaN(actualV)) {
 				return {
 					pass: false,
 					message: `Expected\n${matPrint(expected)},\ngot\n${matPrint(actual as Matrix)}`,

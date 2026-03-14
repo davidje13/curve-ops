@@ -316,14 +316,14 @@ export {
 	quatNearest,
 	quatNorm,
 	quatNorm2,
+	quatPrint,
 	quatScale,
 	quatSlerp,
 	quatSlerpShortestPath,
-	quatSlerpShortestPathUnit,
-	quatSlerpUnit,
 	quatSub,
 	quatUnit,
 	quatVectorNorm,
+	quatVectorNorm2,
 } from './math/Quaternion.mts';
 
 export {

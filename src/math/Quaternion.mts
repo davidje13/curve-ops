@@ -22,12 +22,12 @@ export function quatFromRotationAround(
 	norm = 1,
 ): Quaternion {
 	const s = Math.sin(angle * 0.5) * norm;
-	return {
-		w: Math.cos(angle * 0.5) * norm,
-		x: axis.v[0] * s,
-		y: axis.v[1] * s,
-		z: axis.v[2] * s,
-	};
+	return quatFrom(
+		Math.cos(angle * 0.5) * norm,
+		axis.v[0] * s,
+		axis.v[1] * s,
+		axis.v[2] * s,
+	);
 }
 
 export function quatFromMat3Exact({
@@ -98,12 +98,17 @@ export function quatFromMat3BestFit({
 		}
 	}
 	const eigenvector = mat4Eigenvector(M, largestEigenvalue);
-	return quatUnit({
-		w: eigenvector.v[0],
-		x: eigenvector.v[1],
-		y: eigenvector.v[2],
-		z: eigenvector.v[3],
-	});
+	return quatUnit(quatFrom(...eigenvector.v));
+}
+
+export function quatPrint(
+	quat: Quaternion | null,
+	{ precision = 3 }: { precision?: number } = {},
+) {
+	if (!quat) {
+		return '(null)';
+	}
+	return `${quat.w.toFixed(precision)} + ${quat.x.toFixed(precision)}i + ${quat.y.toFixed(precision)}j + ${quat.z.toFixed(precision)}k`;
 }
 
 export function mat3FromQuat({ w, x, y, z }: Quaternion): Matrix<3, 3> {
@@ -191,6 +196,8 @@ export const quatNorm = ({ w, x, y, z }: Quaternion) => Math.hypot(w, x, y, z);
 export const quatNorm2 = ({ w, x, y, z }: Quaternion) =>
 	w * w + x * x + y * y + z * z;
 export const quatVectorNorm = ({ x, y, z }: Quaternion) => Math.hypot(x, y, z);
+export const quatVectorNorm2 = ({ x, y, z }: Quaternion) =>
+	x * x + y * y + z * z;
 
 export const quatDot = (a: Quaternion, b: Quaternion) =>
 	a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z;
@@ -237,9 +244,13 @@ export const quatLerpShortestPathUnit = (
 
 export function quatSlerp(a: Quaternion, b: Quaternion, t: number): Quaternion {
 	const dot = quatDot(a, b);
+	if (Math.abs(dot) >= 1 - Number.EPSILON) {
+		return t > 0.5 ? b : a; // quaternions are either ~equal, or ~opposite
+	}
 	const halfAngle = Math.acos(dot);
-	const m = Math.sin(t * halfAngle);
-	const M = Math.sin((1 - t) * halfAngle);
+	const scale = 1 / Math.sin(halfAngle);
+	const m = Math.sin((1 - t) * halfAngle) * scale;
+	const M = Math.sin(t * halfAngle) * scale;
 	return {
 		w: a.w * m + b.w * M,
 		x: a.x * m + b.x * M,
@@ -254,9 +265,14 @@ export function quatSlerpShortestPath(
 	t: number,
 ): Quaternion {
 	const dot = quatDot(a, b);
-	const halfAngle = Math.acos(Math.abs(dot));
-	const m = Math.sin(t * halfAngle) * Math.sign(dot);
-	const M = Math.sin((1 - t) * halfAngle);
+	const posdot = Math.abs(dot);
+	if (posdot >= 1 - Number.EPSILON) {
+		return b; // quaternions are ~equal
+	}
+	const halfAngle = Math.acos(posdot);
+	const scale = 1 / Math.sin(halfAngle);
+	const m = Math.sin((1 - t) * halfAngle) * scale * Math.sign(dot);
+	const M = Math.sin(t * halfAngle) * scale;
 	return {
 		w: a.w * m + b.w * M,
 		x: a.x * m + b.x * M,
@@ -265,47 +281,24 @@ export function quatSlerpShortestPath(
 	};
 }
 
-export const quatSlerpUnit = (
-	a: Quaternion,
-	b: Quaternion,
-	t: number,
-): Quaternion => quatUnit(quatSlerp(a, b, t));
-
-export const quatSlerpShortestPathUnit = (
-	a: Quaternion,
-	b: Quaternion,
-	t: number,
-): Quaternion => quatUnit(quatSlerpShortestPath(a, b, t));
-
-export const quatConjugate = ({ w, x, y, z }: Quaternion) => ({
-	w: w,
-	x: -x,
-	y: -y,
-	z: -z,
-});
+export const quatConjugate = ({ w, x, y, z }: Quaternion) =>
+	quatFrom(w, -x, -y, -z);
 
 export const quatInv = (quat: Quaternion) =>
 	quatScale(quatConjugate(quat), 1 / quatNorm2(quat));
 
-export const quatExp = (quat: Quaternion): Quaternion => {
+export function quatExp(quat: Quaternion): Quaternion {
+	// thanks, https://en.wikipedia.org/wiki/Quaternion#Exponential,_logarithm,_and_power_functions
 	const vecNorm = quatVectorNorm(quat);
 	const exp = Math.exp(quat.w);
-	const m = (exp * Math.sin(vecNorm)) / vecNorm;
-	return {
-		w: Math.cos(vecNorm) * exp,
-		x: quat.x * m,
-		y: quat.y * m,
-		z: quat.z * m,
-	};
-};
+	const m = exp * (vecNorm ? Math.sin(vecNorm) / vecNorm : 1);
+	return quatFrom(Math.cos(vecNorm) * exp, quat.x * m, quat.y * m, quat.z * m);
+}
 
-export const quatLog = (quat: Quaternion): Quaternion => {
+export function quatLog(quat: Quaternion): Quaternion {
+	// thanks, https://en.wikipedia.org/wiki/Quaternion#Exponential,_logarithm,_and_power_functions
 	const norm = quatNorm(quat);
-	const m = Math.acos(quat.w / norm) / quatVectorNorm(quat);
-	return {
-		w: Math.log(norm),
-		x: quat.x * m,
-		y: quat.y * m,
-		z: quat.z * m,
-	};
-};
+	const vecNorm = quatVectorNorm(quat);
+	const m = vecNorm ? Math.acos(quat.w / norm) / vecNorm : 0;
+	return quatFrom(Math.log(norm), quat.x * m, quat.y * m, quat.z * m);
+}

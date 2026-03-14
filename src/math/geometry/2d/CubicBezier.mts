@@ -35,6 +35,18 @@ export const bezier3FromPts = (
 	p3: Pt,
 ): CubicBezier => ({ p0, c1, c2, p3 });
 
+export const bezier3FromQuad = (
+	p0: Pt,
+	c0: Pt,
+	c1: Pt,
+	p1: Pt,
+): CubicBezier => ({
+	p0,
+	c1: ptLerp(c0, p1, 1 / 3),
+	c2: ptLerp(c1, p0, 1 / 3),
+	p3: p1,
+});
+
 export const bezier3FromBezier2 = ({
 	p0,
 	c1,

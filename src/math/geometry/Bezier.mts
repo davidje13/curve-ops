@@ -13,12 +13,34 @@ import {
 	type SquareMatrix,
 } from '../Matrix.mts';
 import type { Polynomial } from '../Polynomial.mts';
-import { vec3Cross, vecAdd, vecNorm, type Vector } from '../Vector.mts';
+import {
+	matFromVecArray,
+	vec3Cross,
+	vecAdd,
+	vecLerp,
+	vecNorm,
+	type Vector,
+} from '../Vector.mts';
 
 export type Bezier<Points extends number, Dim extends number> = Matrix<
 	Points,
 	Dim
 >;
+
+export const bezierFromVecs: <
+	Dim extends number,
+	const T extends Vector<Dim>[],
+>(
+	vecs: T,
+) => Bezier<T['length'], Dim> = matFromVecArray;
+
+export const bezierFromQuad = <Dim extends number>(
+	p0: Vector<Dim>,
+	c0: Vector<Dim>,
+	c1: Vector<Dim>,
+	p1: Vector<Dim>,
+): Bezier<4, Dim> =>
+	matFromVecArray([p0, vecLerp(c0, p1, 1 / 3), vecLerp(c1, p0, 1 / 3), p1]);
 
 export const bezierAt = <Points extends number, Dim extends number>(
 	curve: Bezier<Points, Dim>,

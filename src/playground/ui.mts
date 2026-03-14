@@ -22,6 +22,10 @@ import {
 	rectFromLine,
 	rectSVG,
 } from '../index.mts';
+import {
+	bezier3FromPts,
+	bezier3FromQuad,
+} from '../math/geometry/2d/CubicBezier.mts';
 import { grabbable, mk, mkSVG } from './dom.mts';
 import { DragHandler } from './DragHandler.mts';
 
@@ -157,7 +161,8 @@ import { DragHandler } from './DragHandler.mts';
 	);
 
 	function update() {
-		const bezier = { p0, c1: p1, c2: p2, p3 };
+		const bezier = bezier3FromPts(p0, p1, p2, p3);
+		//const bezier = bezier3FromQuad(p0, p1, p2, p3);
 		pathCtl.setAttribute('d', bezier3SVG(bezier, undefined, 'M', 'L'));
 		pathCurve.setAttribute('d', bezier3SVG(bezier));
 

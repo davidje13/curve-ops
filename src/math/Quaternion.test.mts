@@ -1,5 +1,6 @@
 import { approxEqualsMatrix } from '../test-helpers/approxEqualsMatrix.mts';
 import { approxEqualsQuaternion } from '../test-helpers/approxEqualsQuaternion.mts';
+import { bezierAt, bezierFromQuad } from './geometry/Bezier.mts';
 import {
 	mat3FromQuat,
 	mat3FromUnitQuat,
@@ -27,6 +28,7 @@ import {
 	quatScale,
 	quatSlerp,
 	quatSlerpShortestPath,
+	quatSquad,
 	quatSub,
 	quatUnit,
 	quatVectorNorm,
@@ -440,6 +442,34 @@ describe('quatSlerpShortestPath', () => {
 		expect(quatSlerpShortestPath(q, q, 1 / 3)).equals(q);
 		expect(quatSlerpShortestPath(quatScale(q, -1), q, 1 / 3)).equals(q);
 		expect(quatSlerpShortestPath(quatScale(q, -1), q, 2 / 3)).equals(q);
+	});
+});
+
+describe('quatSquad', () => {
+	it('spherically interpolates between two quaternions with additional control points', () => {
+		const axis = vecNorm(vecFrom(0, 1, 2));
+		const a0 = Math.PI * 0.3;
+		const a1 = Math.PI * 0.1; // d(0) = 0 (a1 = a0-(a3-a0)/2)
+		const a2 = Math.PI * 0.9; // d(1) = 1 (a2 = a3+(a3-a0)/2)
+		const a3 = Math.PI * 0.7;
+		const q0 = quatFromRotationAround(axis, a0);
+		const s1 = quatFromRotationAround(axis, a1);
+		const s2 = quatFromRotationAround(axis, a2);
+		const q3 = quatFromRotationAround(axis, a3);
+		const bezierEquiv = bezierFromQuad(
+			vecFrom(a0),
+			vecFrom(a1),
+			vecFrom(a2),
+			vecFrom(a3),
+		);
+		for (let i = 0; i <= 100; ++i) {
+			const t = i / 100;
+			const a = bezierAt(bezierEquiv, t).v[0];
+			expect(
+				quatSquad(q0, s1, s2, q3, t),
+				approxEqualsQuaternion(quatFromRotationAround(axis, a)),
+			);
+		}
 	});
 });
 

@@ -281,6 +281,14 @@ export function quatSlerpShortestPath(
 	};
 }
 
+export const quatSquad = (
+	p0: Quaternion,
+	s1: Quaternion,
+	s2: Quaternion,
+	p3: Quaternion,
+	t: number,
+) => quatSlerp(quatSlerp(p0, p3, t), quatSlerp(s1, s2, t), 2 * t * (1 - t));
+
 export const quatConjugate = ({ w, x, y, z }: Quaternion) =>
 	quatFrom(w, -x, -y, -z);
 

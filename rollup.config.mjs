@@ -16,7 +16,7 @@ export default [
 					declarationDir: './build/types',
 				},
 				include: ['src/**'],
-				exclude: ['**/*.test.*', '**/test-helpers/*'],
+				exclude: ['**/*.test.*', '**/test-helpers/*', '**/playground/*'],
 				tslib: {},
 			}),
 			terser({

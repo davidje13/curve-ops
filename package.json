@@ -22,7 +22,7 @@
 	"scripts": {
 		"format": "prettier --write .",
 		"test": "lean-test src --preprocess=tsc && package/build.sh && package/run.sh && tsc --noEmit && prettier --check .",
-		"start": "web-listener . -H 'Cross-Origin-Opener-Policy: same-origin' -H 'Cross-Origin-Embedder-Policy: require-corp' --exec 'tsc -w --outDir ./dev-build'",
+		"start": "web-listener --dir dev-build --dir src/playground -H 'Cross-Origin-Opener-Policy: same-origin' -H 'Cross-Origin-Embedder-Policy: require-corp' --exec 'tsc -w --outDir ./dev-build'",
 		"dopublish": "package/build.sh && npm publish package.tgz"
 	},
 	"repository": {
@@ -42,6 +42,6 @@
 		"rollup": "4.x",
 		"rollup-plugin-dts": "6.x",
 		"typescript": "5.9.x",
-		"web-listener": "0.20.0"
+		"web-listener": "0.20.1"
 	}
 }

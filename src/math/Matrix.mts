@@ -64,6 +64,22 @@ export const matIdent = <S extends number>(s: S) => {
 	return internalMatFromFlat(v, s, s);
 };
 
+export const matPadIdent = <S extends number>(
+	{ v, m, n }: Matrix,
+	s: S,
+): SquareMatrix<S> => {
+	if (m > s || n > s) {
+		throw new Error('matrix too large');
+	}
+	const newV: number[] = [];
+	for (let i = 0; i < s; ++i) {
+		for (let j = 0; j < s; ++j) {
+			newV.push(i < m && j < n ? v[i * n + j]! : i === j ? 1 : 0);
+		}
+	}
+	return internalMatFromFlat(newV, s, s);
+};
+
 export function matPrint(
 	mat: Matrix | null,
 	{

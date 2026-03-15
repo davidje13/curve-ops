@@ -24,9 +24,9 @@ export function matFromEyeTargetUp(
 	const y = vec3Cross(z, x);
 
 	return matFrom([
-		[x.v[0], y.v[0], z.v[0], eye.v[0]],
-		[x.v[1], y.v[1], z.v[1], eye.v[1]],
-		[x.v[2], y.v[2], z.v[2], eye.v[2]],
+		[x.v[0], y.v[0], z.v[0], vecDot(eye, x)],
+		[x.v[1], y.v[1], z.v[1], vecDot(eye, y)],
+		[x.v[2], y.v[2], z.v[2], vecDot(eye, z)],
 		[0, 0, 0, 1],
 	]);
 }

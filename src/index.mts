@@ -259,6 +259,7 @@ export {
 	matMul,
 	matMulABTranspose,
 	matMulATransposeB,
+	matPadIdent,
 	matPrint,
 	matReshape,
 	matRightInverse,

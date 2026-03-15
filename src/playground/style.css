@@ -49,6 +49,14 @@ input[type='number'] {
 			stroke: #cccccc;
 		}
 
+		.red {
+			stroke: #cc0000;
+		}
+
+		.blue {
+			stroke: #0000cc;
+		}
+
 		.curve {
 			fill: #00000011;
 			stroke: black;

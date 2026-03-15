@@ -347,6 +347,19 @@ describe('quatLerp', () => {
 		const q = quatFrom(1, 2, 3, 4);
 		expect(quatLerp(q, q, 1 / 3)).equals(q);
 	});
+
+	it('returns the input quaternions at the ends', () => {
+		const q1 = quatFromRotationAround(
+			vecNorm(vecFrom(0, 1, 2)),
+			Math.PI * 0.05,
+		);
+		const q2 = quatFromRotationAround(
+			vecNorm(vecFrom(2, 1, 0)),
+			Math.PI * 0.35,
+		);
+		expect(quatLerp(q1, q2, 0), approxEqualsQuaternion(q1));
+		expect(quatLerp(q1, q2, 1), approxEqualsQuaternion(q2));
+	});
 });
 
 describe('quatLerpShortestPath', () => {
@@ -406,6 +419,19 @@ describe('quatSlerp', () => {
 			quatSlerp(q1, q2, 1 / 3),
 			approxEqualsQuaternion(quatFromRotationAround(axis, Math.PI * 0.15)),
 		);
+	});
+
+	it('returns the input quaternions at the ends', () => {
+		const q1 = quatFromRotationAround(
+			vecNorm(vecFrom(0, 1, 2)),
+			Math.PI * 0.05,
+		);
+		const q2 = quatFromRotationAround(
+			vecNorm(vecFrom(2, 1, 0)),
+			Math.PI * 0.35,
+		);
+		expect(quatSlerp(q1, q2, 0), approxEqualsQuaternion(q1));
+		expect(quatSlerp(q1, q2, 1), approxEqualsQuaternion(q2));
 	});
 
 	it('can interpolate between two identical quaternions', () => {

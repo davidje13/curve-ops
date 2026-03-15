@@ -81,6 +81,7 @@ interface InteractiveScope {
 	): void;
 	addUpdateFn(fn: () => void): void;
 	computed<T>(fn: () => T): { current: T };
+	update(): void;
 }
 
 export function makeInteractive(fn: (scope: InteractiveScope) => void) {
@@ -160,6 +161,7 @@ export function makeInteractive(fn: (scope: InteractiveScope) => void) {
 			});
 			return r;
 		},
+		update,
 	};
 
 	fn(scope);

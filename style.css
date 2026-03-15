@@ -32,11 +32,8 @@ input[type='number'] {
 	position: relative;
 	border: 1px solid black;
 	background: white;
-
-	&.draw {
-		touch-action: pinch-zoom;
-		user-select: none;
-	}
+	touch-action: pinch-zoom;
+	user-select: none;
 
 	& svg {
 		display: block;

@@ -1,11 +1,12 @@
 import {
 	type Matrix,
 	type QuadraticBezier,
+	bezier2FromPts,
 	bezier2LengthEstimate,
 	bezier2SVG,
 	matFrom,
 } from '../../index.mts';
-import { grabbable, makeNumericInput, mk, mkSVG } from '../dom.mts';
+import { makeInteractive, makeNumericInput, mk } from '../dom.mts';
 import { TaskManager } from '../TaskManager.mts';
 
 const scale = new Uint32Array(1024);
@@ -126,8 +127,8 @@ const views = [
 ];
 
 function makeGraph(w: number, h: number, zoom: number) {
-	const rangeMin = makeNumericInput(-15, 0, 1, -15, markDirty);
-	const rangeMax = makeNumericInput(-15, 0, 1, -13, markDirty);
+	const rangeMin = makeNumericInput(-16, 0, 1, -15, markDirty);
+	const rangeMax = makeNumericInput(-16, 0, 1, -13, markDirty);
 	const p0x = makeNumericInput(-100, 100, 'any', -1, redraw);
 	const p0y = makeNumericInput(-100, 100, 'any', 0, redraw);
 	const p2x = makeNumericInput(-100, 100, 'any', 1, redraw);
@@ -280,71 +281,49 @@ function makeGraph(w: number, h: number, zoom: number) {
 	]);
 }
 
+const printLengthEstimate = (est: { best: number; maxError: number }) =>
+	`${est.best.toFixed(16)} ±${est.maxError.toPrecision(1)}`;
+
+const samples = 1000;
+
 document.body.append(
 	makeGraph(
 		500 * window.devicePixelRatio,
 		500 * window.devicePixelRatio,
 		1 / window.devicePixelRatio,
 	),
+
+	makeInteractive(({ addSVGPath, addHandle, addText, computed }) => {
+		const p0 = addHandle('end', { x: 0.1, y: 0.1 });
+		const p1 = addHandle('mid', { x: 0.9, y: 0.1 });
+		const p2 = addHandle('end', { x: 0.1, y: 0.9 });
+		const bezier = computed(() => bezier2FromPts(p0, p1, p2));
+		addSVGPath('ctl', () => bezier2SVG(bezier.current, undefined, 'M', 'L'));
+		addSVGPath('curve', () => bezier2SVG(bezier.current));
+
+		addText(() => {
+			const beginT = performance.now();
+			const trueLength = measureSegmented(bezier.current);
+			const endT = performance.now();
+
+			const estLength = bezier2LengthEstimate(bezier.current, 1e-13);
+
+			const begin1 = performance.now();
+			for (let r = 0; r < samples; ++r) {
+				bezier2LengthEstimate(bezier.current, 1e-13);
+			}
+			const end1 = performance.now();
+
+			return [
+				`True Length:     ~${trueLength.toFixed(16)} (${(endT - beginT).toFixed(4)}ms)`,
+				`Estimated Length: ${printLengthEstimate(
+					estLength,
+				)} (${((end1 - begin1) / samples).toFixed(4)}ms)`,
+				`Difference:       ${Math.abs(trueLength - estLength.best).toFixed(16)} (${Math.abs(trueLength - estLength.best).toPrecision(1)})`,
+			].join('\n');
+		});
+	}),
 );
-
-(() => {
-	const pathCtl = mkSVG('path', { class: 'ctl' });
-	const pathCurve = mkSVG('path', { class: 'curve' });
-	const svg = mkSVG(
-		'svg',
-		{
-			version: '1.1',
-			viewBox: '0 0 1 1',
-			width: 500,
-			height: 500,
-		},
-		[pathCtl, pathCurve],
-	);
-	const dc0 = mk('div', { class: 'ctl end' });
-	const dc1 = mk('div', { class: 'ctl mid' });
-	const dc2 = mk('div', { class: 'ctl end' });
-	const out = mk('pre');
-
-	document.body.append(
-		mk('div', { class: 'item' }, [
-			mk('div', { class: 'playground' }, [svg, dc0, dc1, dc2]),
-			out,
-		]),
-	);
-
-	function update() {
-		const bezier = { p0, c1: p1, p2 };
-		pathCtl.setAttribute('d', bezier2SVG(bezier, undefined, 'M', 'L'));
-		pathCurve.setAttribute('d', bezier2SVG(bezier));
-
-		const printLengthEstimate = (est: { best: number; maxError: number }) =>
-			`${est.best.toFixed(16)} ±${est.maxError.toPrecision(1)}`;
-
-		const samples = 1000;
-		const begin1 = performance.now();
-		for (let r = 0; r < samples; ++r) {
-			bezier2LengthEstimate(bezier, 1e-13);
-		}
-		const end1 = performance.now();
-		const beginT = performance.now();
-		const trueLength = measureSegmented(bezier);
-		const endT = performance.now();
-		const estLength = bezier2LengthEstimate(bezier, 1e-13);
-		out.innerText = [
-			`True Length:     ~${trueLength.toFixed(16)} (${(endT - beginT).toFixed(4)}ms)`,
-			`Estimated Length: ${printLengthEstimate(
-				estLength,
-			)} (${((end1 - begin1) / samples).toFixed(4)}ms)`,
-			`Difference:       ${Math.abs(trueLength - estLength.best).toFixed(16)} (${Math.abs(trueLength - estLength.best).toPrecision(1)})`,
-		].join('\n');
-	}
-
-	const p0 = grabbable(dc0, update, { x: 0.1, y: 0.1 });
-	const p1 = grabbable(dc1, update, { x: 0.9, y: 0.1 });
-	const p2 = grabbable(dc2, update, { x: 0.1, y: 0.9 });
-	update();
-})();
 
 function rescale(
 	v: number,

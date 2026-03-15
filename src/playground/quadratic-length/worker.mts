@@ -15,7 +15,7 @@ import {
 	vecFrom,
 	type Matrix,
 	type QuadraticBezier,
-} from '../index.mts';
+} from '../../index.mts';
 
 self.addEventListener(
 	'message',

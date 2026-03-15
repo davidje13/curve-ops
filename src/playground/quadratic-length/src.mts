@@ -4,9 +4,9 @@ import {
 	bezier2LengthEstimate,
 	bezier2SVG,
 	matFrom,
-} from '../index.mts';
-import { grabbable, makeNumericInput, mk, mkSVG } from './dom.mts';
-import { TaskManager } from './TaskManager.mts';
+} from '../../index.mts';
+import { grabbable, makeNumericInput, mk, mkSVG } from '../dom.mts';
+import { TaskManager } from '../TaskManager.mts';
 
 const scale = new Uint32Array(1024);
 const scaleRGBA = new Uint8ClampedArray(
@@ -23,7 +23,7 @@ for (let i = 0; i < scale.length; ++i) {
 }
 
 const taskManager = new TaskManager<TaskData>(
-	'/dev-build/playground/quadratic-length-worker.mjs',
+	import.meta.resolve('./worker.mjs'),
 );
 
 const DITHER = [

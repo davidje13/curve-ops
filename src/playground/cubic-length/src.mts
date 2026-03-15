@@ -12,8 +12,8 @@ import {
 	ptDist,
 	ptDist2,
 	ptSVG,
-} from '../index.mts';
-import { grabbable, mk, mkSVG } from './dom.mts';
+} from '../../index.mts';
+import { grabbable, mk, mkSVG } from '../dom.mts';
 
 (() => {
 	const pathCtl = mkSVG('path', { class: 'ctl' });

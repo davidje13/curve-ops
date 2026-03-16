@@ -82,7 +82,7 @@ function measureQuadArclen7(
 	return len * 0.5;
 }
 
-const GAUSS_LEGENDRE_COEFFS_7: [number, number][] = [
+const GAUSS_LEGENDRE_COEFFS_7: readonly [number, number][] = [
 	[0.4179591836734694, 0],
 	[0.3818300505051189, 0.4058451513773972],
 	[0.3818300505051189, -0.4058451513773972],

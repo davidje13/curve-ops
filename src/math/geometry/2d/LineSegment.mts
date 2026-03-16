@@ -121,7 +121,7 @@ export function lineBisect(
 
 export function lineSplit(
 	{ p0, p1 }: LineSegment,
-	splits: number[],
+	splits: readonly number[],
 	minRange = 1e-6,
 ): LineSegment[] {
 	let pp0 = p0;
@@ -144,8 +144,7 @@ export const lineSVG = (
 	{ p0, p1 }: LineSegment,
 	precision?: number | undefined,
 	prefix = 'M',
-	mode = 'L',
-) => `${prefix}${ptSVG(p0, precision)}${mode}${ptSVG(p1, precision)}`;
+) => `${prefix}${ptSVG(p0, precision)}L${ptSVG(p1, precision)}`;
 
 export function intersectLineLine(
 	a: LineSegment,

@@ -81,7 +81,7 @@ document.body.append(
 	}),
 );
 
-function pathFromPoints(pts: Vector<4>[], view: Matrix<4, 4>) {
+function pathFromPoints(pts: readonly Vector<4>[], view: Matrix<4, 4>) {
 	const r: string[] = [];
 	for (const pt of pts) {
 		const {

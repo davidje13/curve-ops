@@ -1,4 +1,4 @@
-import type { SizedArray } from '../util/SizedArray.mts';
+import type { SizedArrayWithLength, SizeOf } from '../util/SizedArray.mts';
 import {
 	internalMatFromFlat,
 	matAdd,
@@ -12,32 +12,33 @@ import {
 
 export type Vector<Dim extends number = number> = Matrix<1, Dim>;
 
-export const vecFrom = <const P extends ReadonlyArray<number>>(
+export const vecFrom = <const P extends readonly number[]>(
 	...coords: P
-): Vector<P['length']> => ({ v: coords as any, m: 1, n: coords.length });
+): Vector<SizeOf<P>> => ({
+	v: coords as any,
+	m: 1,
+	n: coords.length as SizeOf<P>,
+});
 
 export function vecArrayFromMat<Dim extends number, Points extends number>({
 	v,
 	m,
 	n,
-}: Matrix<Points, Dim>): SizedArray<Vector<Dim>, Points> {
+}: Matrix<Points, Dim>): SizedArrayWithLength<Vector<Dim>, Points> {
 	const r: Vector<Dim>[] = [];
 	for (let i = 0; i < m; ++i) {
 		r.push(internalMatFromFlat(v.slice(i * n, i * n + n), 1, n));
 	}
-	return r as SizedArray<Vector<Dim>, Points>;
+	return r as SizedArrayWithLength<Vector<Dim>, Points>;
 }
 
-export const matFromVecArray = <
-	Dim extends number,
-	const T extends Vector<Dim>[],
->(
+export const matFromVecArray = <const T extends readonly Vector<number>[]>(
 	vecs: T,
-) =>
+): Matrix<SizeOf<T>, T[number]['n']> =>
 	internalMatFromFlat(
 		vecs.flatMap((pt) => pt.v),
-		vecs.length as T['length'],
-		vecs[0]?.n ?? (0 as Dim),
+		vecs.length as SizeOf<T>,
+		vecs[0]?.n ?? (0 as T[number]['n']),
 	);
 
 export function vecPrint(

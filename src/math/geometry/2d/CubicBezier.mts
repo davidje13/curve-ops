@@ -1,11 +1,19 @@
 import {
+	mat4LeftInverse,
+	matFrom,
+	matFromArrayFn,
+	matMul,
+} from '../../Matrix.mts';
+import {
 	polynomial3Roots,
 	polynomial4Roots,
 	type Polynomial,
 } from '../../Polynomial.mts';
 import { aaBoxFromXY, type AxisAlignedBox } from './AxisAlignedBox.mts';
 import type { LineSegment } from './LineSegment.mts';
+import type { Polyline2D } from './Polyline2D.mts';
 import {
+	matFromPts,
 	ptAdd,
 	ptDist,
 	ptLen,
@@ -15,11 +23,16 @@ import {
 	ptMul,
 	ptNorm,
 	ptRot90,
+	ptsFromMat,
 	ptSub,
 	ptSVG,
 	type Pt,
 } from './Pt.mts';
-import { bezier2At, type QuadraticBezier } from './QuadraticBezier.mts';
+import {
+	bezier2At,
+	bezier2FromPolylinePtsLeastSquares,
+	type QuadraticBezier,
+} from './QuadraticBezier.mts';
 
 export interface CubicBezier {
 	readonly p0: Pt;
@@ -34,6 +47,52 @@ export const bezier3FromPts = (
 	c2: Pt,
 	p3: Pt,
 ): CubicBezier => ({ p0, c1, c2, p3 });
+
+export function bezier3FromPolylinePtsLeastSquares(
+	points: Polyline2D,
+): CubicBezier | null {
+	// thanks, https://pomax.github.io/bezierinfo/#curvefitting
+
+	if (!points.length) {
+		return null;
+	}
+
+	if (points.length >= 4) {
+		const p0 = points[0]!;
+		const pN = points[points.length - 1]!;
+		const dist0 = p0.d;
+		const distM = 1 / (pN.d - dist0);
+
+		const TTinv = mat4LeftInverse(
+			matFromArrayFn(points, ({ d }) => {
+				const t = (d - dist0) * distM;
+				const tt = t * t;
+				return [1, t, tt, tt * t];
+			}),
+		);
+		if (TTinv) {
+			const C = matMul(bezier3MInv, matMul(TTinv, matFromPts(points)));
+			return bezier3FromPts(...ptsFromMat(C));
+		}
+	}
+
+	const curve = bezier2FromPolylinePtsLeastSquares(points);
+	return curve ? bezier3FromBezier2(curve) : null;
+}
+
+export const bezier3M = /*@__PURE__*/ matFrom([
+	[1, 0, 0, 0],
+	[-3, 3, 0, 0],
+	[3, -6, 3, 0],
+	[-1, 3, -3, 1],
+]);
+
+export const bezier3MInv = /*@__PURE__*/ matFrom([
+	[1, 0, 0, 0],
+	[1, 1 / 3, 0, 0],
+	[1, 2 / 3, 1 / 3, 0],
+	[1, 1, 1, 1],
+]);
 
 export const bezier3FromQuad = (
 	p0: Pt,
@@ -258,7 +317,7 @@ export function bezier3Bisect(
 
 export function bezier3Split(
 	{ p0, c1, c2, p3 }: CubicBezier,
-	splits: number[],
+	splits: readonly number[],
 	minRange = 1e-6,
 ): CubicBezier[] {
 	// thanks, https://en.wikipedia.org/wiki/De_Casteljau's_algorithm
@@ -293,22 +352,22 @@ export const bezier3SVG = (
 	curve: CubicBezier,
 	precision?: number | undefined,
 	prefix = 'M',
-	mode = 'C',
+	controlLines = false,
 ) =>
-	`${prefix}${ptSVG(curve.p0, precision)}${mode}${ptSVG(
+	`${prefix}${ptSVG(curve.p0, precision)}${controlLines ? 'L' : 'C'}${ptSVG(
 		curve.c1,
 		precision,
 	)} ${ptSVG(curve.c2, precision)} ${ptSVG(curve.p3, precision)}`;
 
 // Constants source: https://github.com/linebender/kurbo/blob/8e05b2e15fce702673354cfd81b232d94bea6068/kurbo/src/common.rs#L814
 // Kurbo Copyright (c) 2018 Raph Levien, available as Apache-2.0 or MIT
-const GAUSS_LEGENDRE_COEFFS_8_HALF: [number, number][] = [
+const GAUSS_LEGENDRE_COEFFS_8_HALF: readonly [number, number][] = [
 	[0.362683783378362, 0.1834346424956498],
 	[0.3137066458778873, 0.525532409916329],
 	[0.2223810344533745, 0.7966664774136267],
 	[0.1012285362903763, 0.9602898564975363],
 ];
-const GAUSS_LEGENDRE_COEFFS_16_HALF: [number, number][] = [
+const GAUSS_LEGENDRE_COEFFS_16_HALF: readonly [number, number][] = [
 	[0.1894506104550685, 0.0950125098376374],
 	[0.1826034150449236, 0.2816035507792589],
 	[0.1691565193950025, 0.4580167776572274],
@@ -318,7 +377,7 @@ const GAUSS_LEGENDRE_COEFFS_16_HALF: [number, number][] = [
 	[0.0622535239386479, 0.9445750230732326],
 	[0.0271524594117541, 0.9894009349916499],
 ];
-const GAUSS_LEGENDRE_COEFFS_24_HALF: [number, number][] = [
+const GAUSS_LEGENDRE_COEFFS_24_HALF: readonly [number, number][] = [
 	[0.1279381953467522, 0.0640568928626056],
 	[0.1258374563468283, 0.1911188674736163],
 	[0.1216704729278034, 0.3150426796961634],

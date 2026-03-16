@@ -6,7 +6,6 @@ import {
 	matFromArray,
 	matFromArrayFn,
 	mat3LeftInverse,
-	mat4LeftInverse,
 	mat2LeftInverse,
 	mat1LeftInverse,
 } from '../../Matrix.mts';
@@ -18,9 +17,9 @@ import {
 import {
 	bezier3FromBezier2,
 	bezier3FromLine,
-	bezier3FromPts,
 	type CubicBezier,
 } from './CubicBezier.mts';
+import type { Polyline2D } from './Polyline2D.mts';
 import {
 	matFromPts,
 	ptAdd,
@@ -34,78 +33,10 @@ import {
 	ptNorm,
 	ptSub,
 	type Pt,
-	type PtWithDist,
 } from './Pt.mts';
-import {
-	bezier2FromLine,
-	bezier2FromPts,
-	type QuadraticBezier,
-} from './QuadraticBezier.mts';
-
-export function leastSquaresFitQuadratic(
-	points: PtWithDist[],
-): QuadraticBezier | null {
-	// thanks, https://pomax.github.io/bezierinfo/#curvefitting
-
-	if (!points.length) {
-		return null;
-	}
-
-	const p0 = points[0]!;
-	const pN = points[points.length - 1]!;
-
-	if (points.length >= 3) {
-		const dist0 = p0.d;
-		const distM = 1 / (pN.d - dist0);
-		const P = matFromPts(points);
-		const T = matFromArrayFn(points, ({ d }) => {
-			const t = (d - dist0) * distM;
-			return [1, t, t * t];
-		});
-		const TTinv = mat3LeftInverse(T);
-		if (TTinv) {
-			const C = matMul(QUADRATIC_M_INV, matMul(TTinv, P));
-			return bezier2FromPts(...ptsFromMat(C));
-		}
-	}
-
-	// if we reach this, the points must be colinear;
-	// draw a straight line from start to end
-	return bezier2FromLine({ p0, p1: pN });
-}
-
-export function leastSquaresFitCubic(points: PtWithDist[]): CubicBezier | null {
-	// thanks, https://pomax.github.io/bezierinfo/#curvefitting
-
-	if (!points.length) {
-		return null;
-	}
-
-	if (points.length >= 4) {
-		const p0 = points[0]!;
-		const pN = points[points.length - 1]!;
-		const dist0 = p0.d;
-		const distM = 1 / (pN.d - dist0);
-		const P = matFromPts(points);
-		const T = matFromArrayFn(points, ({ d }) => {
-			const t = (d - dist0) * distM;
-			const tt = t * t;
-			return [1, t, tt, tt * t];
-		});
-
-		const TTinv = mat4LeftInverse(T);
-		if (TTinv) {
-			const C = matMul(CUBIC_M_INV, matMul(TTinv, P));
-			return bezier3FromPts(...ptsFromMat(C));
-		}
-	}
-
-	const curve = leastSquaresFitQuadratic(points);
-	return curve ? bezier3FromBezier2(curve) : null;
-}
 
 export function leastSquaresFitCubicFixEnds(
-	points: PtWithDist[],
+	points: Polyline2D,
 	prevControl: Pt | null = null,
 ): CubicBezier | null {
 	if (points.length === 0) {
@@ -266,18 +197,8 @@ export function leastSquaresFitCubicFixEnds(
 
 // C = M^-1 * (trans(T)*T)^-1 * trans(T) * P
 
-const QUADRATIC_M_INV = /*@__PURE__*/ matFrom([
-	[1, 0, 0],
-	[1, 0.5, 0],
-	[1, 1, 1],
-]);
 const QUADRATIC_M_INV_FIXED_ENDS = /*@__PURE__*/ matFrom([[0.5]]);
-const CUBIC_M_INV = /*@__PURE__*/ matFrom([
-	[1, 0, 0, 0],
-	[1, 1 / 3, 0, 0],
-	[1, 2 / 3, 1 / 3, 0],
-	[1, 1, 1, 1],
-]);
+
 const CUBIC_M_INV_FIXED_ENDS = /*@__PURE__*/ matFrom([
 	[1 / 3, 1 / 3],
 	[1 / 3, 2 / 3],

@@ -12,6 +12,7 @@ export {
 	bezierFromBezier2,
 	bezierFromBezier3,
 	bezierFromLine,
+	bezierSVG,
 	lineFromBezier,
 } from './math/geometry/2d/bezierConversion.mts';
 
@@ -31,9 +32,12 @@ export {
 	bezier3Derivative,
 	bezier3FromBezier2,
 	bezier3FromLine,
+	bezier3FromPolylinePtsLeastSquares,
 	bezier3FromPts,
 	bezier3FromQuad,
 	bezier3LengthEstimate,
+	bezier3M,
+	bezier3MInv,
 	bezier3NormalAt,
 	bezier3PolynomialX,
 	bezier3PolynomialY,
@@ -59,11 +63,7 @@ export {
 	isOverlapAABoxCircle,
 } from './math/geometry/2d/intersection.mts';
 
-export {
-	leastSquaresFitCubic,
-	leastSquaresFitCubicFixEnds,
-	leastSquaresFitQuadratic,
-} from './math/geometry/2d/leastSquaresBezier.mts';
+export { leastSquaresFitCubicFixEnds } from './math/geometry/2d/leastSquaresBezier.mts';
 
 export {
 	type LineSegment,
@@ -107,9 +107,15 @@ export {
 } from './math/geometry/2d/Polygon.mts';
 
 export {
+	type PtWithDist,
+	type Polyline2D,
+	polyline2DFromPts,
+	polyline2DSVG,
+} from './math/geometry/2d/Polyline2D.mts';
+
+export {
 	PT0,
 	type Pt,
-	type PtWithDist,
 	matFromPts,
 	ptAdd,
 	ptAngle,
@@ -125,7 +131,6 @@ export {
 	ptMid,
 	ptMul,
 	ptNorm,
-	ptPolyline,
 	ptReflect,
 	ptRot90,
 	ptSVG,
@@ -143,8 +148,11 @@ export {
 	bezier2Bounds,
 	bezier2Derivative,
 	bezier2FromLine,
+	bezier2FromPolylinePtsLeastSquares,
 	bezier2FromPts,
 	bezier2LengthEstimate,
+	bezier2M,
+	bezier2MInv,
 	bezier2NormalAt,
 	bezier2PolynomialX,
 	bezier2PolynomialY,
@@ -184,7 +192,11 @@ export {
 	bezierBisect,
 	bezierDerivative,
 	bezierElevateOrder,
+	bezierElevateOrderTo,
 	bezierFrenetNormalAt,
+	bezierFromEndpoints,
+	bezierFromPolylineVertsLeastSquares,
+	bezierFromPolylineVertsLeastSquaresFixEnds,
 	bezierFromQuad,
 	bezierFromVecs,
 	bezierLowerOrder,
@@ -197,6 +209,12 @@ export {
 	bezierTangentAt,
 	bezierTranslate,
 } from './math/geometry/Bezier.mts';
+
+export {
+	type Polyline,
+	type VectorWithDist,
+	polylineFromVecs,
+} from './math/geometry/Polyline.mts';
 
 export { binomial } from './math/binomial.mts';
 
@@ -271,6 +289,7 @@ export {
 	matTrace,
 	matTranspose,
 	matUnaryOp,
+	matWindow,
 	matZero,
 } from './math/Matrix.mts';
 
@@ -368,5 +387,6 @@ export type {
 export {
 	type SizedArray,
 	type SizedArrayWithLength,
+	type SizeOf,
 	zeros,
 } from './util/SizedArray.mts';

@@ -1,5 +1,5 @@
 import type { Decrement, DivideWhole, Multiply } from '../types/numeric.mts';
-import { zeros, type SizedArray } from '../util/SizedArray.mts';
+import { zeros, type SizedArray, type SizeOf } from '../util/SizedArray.mts';
 
 export interface Matrix<M extends number = number, N extends number = number> {
 	readonly v: Readonly<SizedArray<number, Multiply<M, N>>>; // row major
@@ -15,7 +15,7 @@ export const internalMatFromFlat = <M extends number, N extends number>(
 	n: N,
 ): Matrix<M, N> => ({ v: v as any, m, n });
 
-export const matFrom = <const V extends ReadonlyArray<ReadonlyArray<number>>>(
+export const matFrom = <const V extends readonly (readonly number[])[]>(
 	v: V,
 ) => {
 	const expanded = v.flat();
@@ -24,13 +24,13 @@ export const matFrom = <const V extends ReadonlyArray<ReadonlyArray<number>>>(
 	}
 	return internalMatFromFlat(
 		expanded,
-		v.length as V['length'],
-		(v[0]?.length ?? 0) as V[number]['length'],
+		v.length as SizeOf<V>,
+		(v[0]?.length ?? 0) as SizeOf<V[number]>,
 	);
 };
 
-export const matFromDiag = <const D extends ReadonlyArray<number>>(diag: D) => {
-	const s = diag.length as D['length'];
+export const matFromDiag = <const D extends readonly number[]>(diag: D) => {
+	const s = diag.length as SizeOf<D>;
 	const v = zeros(s * s);
 	for (let i = 0; i < s; ++i) {
 		v[i * (s + 1)] = diag[i]!;
@@ -38,7 +38,10 @@ export const matFromDiag = <const D extends ReadonlyArray<number>>(diag: D) => {
 	return internalMatFromFlat(v, s, s);
 };
 
-export function matFromArray<Dim extends number>(values: number[], dim: Dim) {
+export function matFromArray<Dim extends number>(
+	values: readonly number[],
+	dim: Dim,
+) {
 	if (values.length % dim) {
 		throw new Error('invalid array length for matrix');
 	}
@@ -46,12 +49,12 @@ export function matFromArray<Dim extends number>(values: number[], dim: Dim) {
 }
 
 export const matFromArrayFn = <
-	const I extends unknown[],
-	const V extends number[],
+	const I extends readonly unknown[],
+	const V extends readonly number[],
 >(
 	values: I,
 	fn: (x: I[number]) => V,
-): Matrix<I['length'], V['length']> => matFrom(values.map(fn));
+) => matFrom(values.map(fn)) as Matrix<SizeOf<I>, SizeOf<V>>;
 
 export const matZero = <M extends number, N extends number>(m: M, n: N) =>
 	internalMatFromFlat(zeros(m * n), m, n);
@@ -315,6 +318,34 @@ export function matMinor<M extends number, N extends number>(
 		}
 	}
 	return internalMatFromFlat(newV, m - 1, n - 1);
+}
+
+export function matWindow<
+	M extends number,
+	N extends number,
+	MW extends number,
+	NW extends number,
+>(
+	{ v, m, n }: Matrix<M, N>,
+	row: number,
+	col: number,
+	rows: MW,
+	cols: NW,
+): Matrix<MW, NW> {
+	if (row < 0 || row + rows > m || rows < 0) {
+		throw new Error(`row range ${row}-${row + rows} out of bounds`);
+	}
+	if (col < 0 || col + cols >= n || cols < 0) {
+		throw new Error(`column range ${col}-${col + cols} out of bounds`);
+	}
+	const newV: number[] = [];
+	const s = row * n + col;
+	for (let i = 0; i < rows; ++i) {
+		for (let j = 0; j < cols; ++j) {
+			newV.push(v[s + i * n + j]!);
+		}
+	}
+	return internalMatFromFlat(newV, rows, cols);
 }
 
 export function matDeterminant<N extends number>(mat: SquareMatrix<N>): number {
@@ -663,7 +694,7 @@ export function mat4Inverse({
 		c0112 * c2303 -
 		c0113 * c2302 +
 		c0123 * c2301;
-	if (Math.abs(det) < 1e-8) {
+	if (Math.abs(det) < Number.EPSILON) {
 		return null;
 	}
 

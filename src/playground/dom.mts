@@ -64,6 +64,35 @@ export function makeNumericInput(
 	};
 }
 
+export function makeCheckbox(
+	label: string,
+	initial: boolean,
+	onChange: () => void,
+) {
+	let value = initial;
+	const input = mk('input', {
+		type: 'checkbox',
+		checked: initial ? 'checked' : undefined,
+	}) as HTMLInputElement;
+
+	input.addEventListener('change', () => {
+		const newValue = input.checked;
+		if (newValue !== value) {
+			value = newValue;
+			onChange();
+		}
+	});
+
+	return {
+		input: mk('label', {}, [input, ' ', label]),
+		current: () => value,
+		set: (v: boolean) => {
+			value = v;
+			input.checked = v;
+		},
+	};
+}
+
 interface InteractiveScope {
 	addElement<T extends Element>(o: T): T;
 	addPlaygroundElement<T extends Element>(o: T): T;
@@ -172,12 +201,14 @@ export function makeInteractive(fn: (scope: InteractiveScope) => void) {
 
 export function mk(
 	type: string,
-	attrs: Record<string, string | number> = {},
+	attrs: Record<string, string | number | undefined> = {},
 	children: (string | Element)[] = [],
 ) {
 	const o: HTMLElement = document.createElement(type);
 	for (const k in attrs) {
-		o.setAttribute(k, String(attrs[k]));
+		if (attrs[k] !== undefined) {
+			o.setAttribute(k, String(attrs[k]));
+		}
 	}
 	o.append(...children);
 	return o;

@@ -1,4 +1,10 @@
 import {
+	mat3LeftInverse,
+	matFrom,
+	matFromArrayFn,
+	matMul,
+} from '../../Matrix.mts';
+import {
 	polynomial2Roots,
 	polynomial3Roots,
 	type Polynomial,
@@ -9,7 +15,9 @@ import {
 	lineAt,
 	type LineSegment,
 } from './LineSegment.mts';
+import type { Polyline2D } from './Polyline2D.mts';
 import {
+	matFromPts,
 	ptAdd,
 	ptDist,
 	ptDot,
@@ -21,6 +29,7 @@ import {
 	ptMul,
 	ptNorm,
 	ptRot90,
+	ptsFromMat,
 	ptSub,
 	ptSVG,
 	type Pt,
@@ -37,6 +46,50 @@ export const bezier2FromPts = (p0: Pt, c1: Pt, p2: Pt): QuadraticBezier => ({
 	c1,
 	p2,
 });
+
+export function bezier2FromPolylinePtsLeastSquares(
+	points: Polyline2D,
+): QuadraticBezier | null {
+	// thanks, https://pomax.github.io/bezierinfo/#curvefitting
+
+	if (!points.length) {
+		return null;
+	}
+
+	const p0 = points[0]!;
+	const pN = points[points.length - 1]!;
+
+	if (points.length >= 3) {
+		const dist0 = p0.d;
+		const distM = 1 / (pN.d - dist0);
+		const TTinv = mat3LeftInverse(
+			matFromArrayFn(points, ({ d }) => {
+				const t = (d - dist0) * distM;
+				return [1, t, t * t];
+			}),
+		);
+		if (TTinv) {
+			const C = matMul(bezier2MInv, matMul(TTinv, matFromPts(points)));
+			return bezier2FromPts(...ptsFromMat(C));
+		}
+	}
+
+	// if we reach this, the points must be colinear;
+	// draw a straight line from start to end
+	return bezier2FromLine({ p0, p1: pN });
+}
+
+export const bezier2M = /*@__PURE__*/ matFrom([
+	[1, 0, 0],
+	[-2, 2, 0],
+	[1, -2, 1],
+]);
+
+export const bezier2MInv = /*@__PURE__*/ matFrom([
+	[1, 0, 0],
+	[1, 0.5, 0],
+	[1, 1, 1],
+]);
 
 export const bezier2FromLine = ({ p0, p1 }: LineSegment): QuadraticBezier => ({
 	p0: p0,
@@ -225,7 +278,7 @@ export function bezier2Bisect(
 
 export function bezier2Split(
 	{ p0, c1, p2 }: QuadraticBezier,
-	splits: number[],
+	splits: readonly number[],
 	minRange = 1e-6,
 ): QuadraticBezier[] {
 	// thanks, https://en.wikipedia.org/wiki/De_Casteljau's_algorithm
@@ -255,9 +308,9 @@ export const bezier2SVG = (
 	{ p0, c1, p2 }: QuadraticBezier,
 	precision?: number | undefined,
 	prefix = 'M',
-	mode = 'Q',
+	controlLines = false,
 ) =>
-	`${prefix}${ptSVG(p0, precision)}${mode}${ptSVG(c1, precision)} ${ptSVG(
+	`${prefix}${ptSVG(p0, precision)}${controlLines ? 'L' : 'Q'}${ptSVG(c1, precision)} ${ptSVG(
 		p2,
 		precision,
 	)}`;
@@ -269,7 +322,7 @@ interface LengthEstimate {
 
 // Constants source: https://github.com/linebender/kurbo/blob/8e05b2e15fce702673354cfd81b232d94bea6068/kurbo/src/common.rs#L804
 // Kurbo Copyright (c) 2018 Raph Levien, available as Apache-2.0 or MIT
-const GAUSS_LEGENDRE_COEFFS_7: [number, number][] = [
+const GAUSS_LEGENDRE_COEFFS_7: readonly [number, number][] = [
 	[0.4179591836734694, 0],
 	[0.3818300505051189, 0.4058451513773972],
 	[0.3818300505051189, -0.4058451513773972],

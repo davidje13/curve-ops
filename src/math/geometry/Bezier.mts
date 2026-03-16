@@ -1,14 +1,21 @@
 import type { Decrement, Increment } from '../../types/numeric.mts';
-import { zeros, type SizedArrayWithLength } from '../../util/SizedArray.mts';
+import {
+	zeros,
+	type SizedArrayWithLength,
+	type SizeOf,
+} from '../../util/SizedArray.mts';
 import { binomial } from '../binomial.mts';
 import {
 	internalMatFromFlat,
 	MAT2ROT90,
 	matAddColumnwise,
+	matFrom,
+	matFromArrayFn,
 	matFromDiag,
 	matInverse,
 	matLeftInverse,
 	matMul,
+	matWindow,
 	type Matrix,
 	type SquareMatrix,
 } from '../Matrix.mts';
@@ -17,22 +24,35 @@ import {
 	matFromVecArray,
 	vec3Cross,
 	vecAdd,
+	vecArrayFromMat,
 	vecLerp,
+	vecMad,
 	vecNorm,
+	vecSub,
 	type Vector,
 } from '../Vector.mts';
+import type { Polyline } from './Polyline.mts';
 
 export type Bezier<Points extends number, Dim extends number> = Matrix<
 	Points,
 	Dim
 >;
 
-export const bezierFromVecs: <
-	Dim extends number,
-	const T extends Vector<Dim>[],
->(
+export const bezierFromVecs: <const T extends readonly Vector<number>[]>(
 	vecs: T,
-) => Bezier<T['length'], Dim> = matFromVecArray;
+) => Bezier<SizeOf<T>, T[number]['n']> = matFromVecArray;
+
+export const bezierFromEndpoints = <Points extends number, Dim extends number>(
+	p0: Vector<Dim>,
+	p1: Vector<Dim>,
+	m: Points,
+): Bezier<Points, Dim> => {
+	const pts: Vector<Dim>[] = [];
+	for (let i = 0; i <= m; ++i) {
+		pts.push(vecLerp(p0, p1, i / m));
+	}
+	return matFromVecArray(pts) as Bezier<Points, Dim>;
+};
 
 export const bezierFromQuad = <Dim extends number>(
 	p0: Vector<Dim>,
@@ -42,6 +62,110 @@ export const bezierFromQuad = <Dim extends number>(
 ): Bezier<4, Dim> =>
 	matFromVecArray([p0, vecLerp(c0, p1, 1 / 3), vecLerp(c1, p0, 1 / 3), p1]);
 
+export function bezierFromPolylineVertsLeastSquares<
+	Points extends number,
+	Dim extends number,
+>(polyline: Polyline<Dim>, m: Points): Bezier<Points, Dim> | null {
+	// thanks, https://pomax.github.io/bezierinfo/#curvefitting
+
+	if (!polyline.length || m < 2) {
+		return null;
+	}
+
+	const p0 = polyline[0]!;
+	const pN = polyline[polyline.length - 1]!;
+
+	if (polyline.length > 2) {
+		const dist0 = p0.d;
+		const distM = 1 / (pN.d - dist0);
+
+		const reducedM = Math.min(polyline.length, m);
+		const TTinv = matLeftInverse(
+			matFromArrayFn(polyline, ({ d }) =>
+				powers((d - dist0) * distM, reducedM),
+			),
+		);
+		if (TTinv) {
+			const reducedBezier = matMul(
+				bezierMInv(reducedM),
+				matMul(TTinv, matFromVecArray(polyline)),
+			);
+			return bezierElevateOrderTo(reducedBezier, m);
+		}
+	}
+
+	// if we reach this, the points must be colinear;
+	// draw a straight line from start to end
+	return bezierFromEndpoints(p0, pN, m);
+}
+
+export function bezierFromPolylineVertsLeastSquaresFixEnds<
+	Points extends number,
+	Dim extends number,
+>(polyline: Polyline<Dim>, m: Points): Bezier<Points, Dim> | null {
+	if (!polyline.length || m < 2) {
+		return null;
+	}
+
+	const p0 = polyline[0]!;
+	const pN = polyline[polyline.length - 1]!;
+
+	if (polyline.length > 2) {
+		const dist0 = p0.d;
+		const distM = 1 / (pN.d - dist0);
+		const dN = vecSub(pN, p0);
+
+		// We subtract the start point from all points to trivially remove the
+		// first row+column of M.
+		// Then to remove the last row+column of M, we must rearrange them to be
+		// all 0s except the last.
+		// The structure of M means we can just add all rows above to the last row
+		// to make it be 0 (except the last term which will be 1).
+		// When we add a row [A] to another row [B], we must subtract the t-value B
+		// from the t-value A to maintain the equations,
+		// So we subtract the last t-value from all the others.
+		// This leaves the last control point linearly independent of the others,
+		// so we can just multiply it by the last t-value and subtract it from each
+		// point.
+
+		const reducedM = Math.min(polyline.length, m);
+		const adjustedPoints: Vector<Dim>[] = [];
+		const Tv: number[][] = [];
+		for (let i = 1; i < polyline.length - 1; ++i) {
+			const pt = polyline[i]!;
+			const t = (pt.d - dist0) * distM;
+			const rawTPowers = powers(t, reducedM);
+			const lastT = rawTPowers.pop()!;
+			Tv.push(rawTPowers.slice(1).map((t) => t - lastT));
+			adjustedPoints.push(vecSub(pt, vecMad(dN, lastT, p0)));
+		}
+		const TTinv = matLeftInverse(matFrom(Tv));
+		if (TTinv) {
+			const clippedM = matWindow(
+				bezierM(reducedM),
+				1,
+				1,
+				reducedM - 2,
+				reducedM - 2,
+			);
+			const controls = matMul(
+				matInverse(clippedM)!,
+				matMul(TTinv, matFromVecArray(adjustedPoints)),
+			);
+			const reducedBezier = matFromVecArray([
+				p0,
+				...vecArrayFromMat(controls).map((pt) => vecAdd(pt, p0)),
+				pN,
+			]);
+			return bezierElevateOrderTo(reducedBezier, m);
+		}
+	}
+
+	// if we reach this, the points must be colinear;
+	// draw a straight line from start to end
+	return bezierFromEndpoints(p0, pN, m);
+}
+
 export const bezierAt = <Points extends number, Dim extends number>(
 	curve: Bezier<Points, Dim>,
 	t: number,
@@ -50,8 +174,8 @@ export const bezierAt = <Points extends number, Dim extends number>(
 export function bezierAtMulti<
 	Points extends number,
 	Dim extends number,
-	const Ts extends number[],
->(curve: Bezier<Points, Dim>, ts: Ts): Matrix<Ts['length'], Dim> {
+	const Ts extends readonly number[],
+>(curve: Bezier<Points, Dim>, ts: Ts): Matrix<SizeOf<Ts>, Dim> {
 	const ordP1 = curve.m;
 	const tVals: number[] = [];
 	for (let i = 0; i < ts.length; ++i) {
@@ -62,7 +186,7 @@ export function bezierAtMulti<
 		}
 	}
 	return matMul(
-		internalMatFromFlat(tVals, ts.length as Ts['length'], ordP1),
+		internalMatFromFlat(tVals, ts.length as SizeOf<Ts>, ordP1),
 		matMul(bezierM(curve.m), curve),
 	);
 }
@@ -99,6 +223,22 @@ export function bezierElevateOrder<Points extends number, Dim extends number>({
 		}
 	}
 	return internalMatFromFlat(newV, newM, n);
+}
+
+export function bezierElevateOrderTo<
+	Points extends number,
+	Dim extends number,
+	NewPoints extends number,
+>(curve: Bezier<Points, Dim>, newM: NewPoints): Bezier<NewPoints, Dim> {
+	// could optimise this to a single step instead of going via every intermediate bezier
+	if (newM < curve.m) {
+		throw new Error('curve is higher order than target');
+	}
+	let c: Bezier<number, Dim> = curve;
+	while (c.m < newM) {
+		c = bezierElevateOrder(c);
+	}
+	return c as Bezier<NewPoints, Dim>;
 }
 
 const BEZIER_LOWER_ORDER_CACHE = /*@__PURE__*/ new Map<number, Matrix>();
@@ -237,7 +377,7 @@ export function bezierBisect<Points extends number, Dim extends number>(
 
 export function bezierSplit<Points extends number, Dim extends number>(
 	curve: Bezier<Points, Dim>,
-	splits: number[],
+	splits: readonly number[],
 	minRange = 1e-6,
 ): Bezier<Points, Dim>[] {
 	let remaining = curve;

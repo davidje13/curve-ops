@@ -1,12 +1,12 @@
 import type { Decrement, Increment, Max } from '../types/numeric.mts';
-import { zeros, type SizedArray } from '../util/SizedArray.mts';
+import { zeros, type SizedArray, type SizeOf } from '../util/SizedArray.mts';
 import { internalMatFromFlat, type SquareMatrix } from './Matrix.mts';
 
 export type Polynomial<N extends number = number> = SizedArray<number, N>;
 
 export function polynomialCompanionMat<const P extends Polynomial>(
 	poly: P,
-): SquareMatrix<Decrement<P['length']>> {
+): SquareMatrix<Decrement<SizeOf<P>>> {
 	if (!poly.length) {
 		throw new Error('empty polynomial');
 	}
@@ -37,13 +37,13 @@ export const polynomialMul = (...polynomials: Polynomial[]): Polynomial =>
 	});
 
 export const polynomialDerivative = <const P extends Polynomial>(poly: P) =>
-	poly.map((v, i) => v * i).slice(1) as Polynomial<Decrement<P['length']>>;
+	poly.map((v, i) => v * i).slice(1) as Polynomial<Decrement<SizeOf<P>>>;
 
 export const polynomialIntegral = <const P extends Polynomial>(
 	poly: P,
 	c = 0,
 ) =>
-	[c, ...poly.map((v, i) => v / (i + 1))] as Polynomial<Increment<P['length']>>;
+	[c, ...poly.map((v, i) => v / (i + 1))] as Polynomial<Increment<SizeOf<P>>>;
 
 export const polynomialAdd = <N extends number, M extends number>(
 	a: Polynomial<N>,
@@ -85,7 +85,7 @@ export const polynomialWithSolutions = <const S extends number[]>(
 	...solutions: S
 ) =>
 	polynomialMul(...solutions.map((s) => [-s, 1])) as Polynomial<
-		Increment<S['length']>
+		Increment<SizeOf<S>>
 	>;
 
 export function polynomialRoots(

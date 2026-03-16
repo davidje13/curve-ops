@@ -1,6 +1,6 @@
 import type { Pt } from './Pt.mts';
 
-export type Polygon = Pt[];
+export type Polygon = readonly Pt[];
 
 export function polygonSignedArea(shape: Polygon): number {
 	// Thanks, https://stackoverflow.com/a/1165943/1180785

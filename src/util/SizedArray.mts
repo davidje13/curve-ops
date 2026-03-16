@@ -5,6 +5,12 @@ export type SizedArrayWithLength<T, N extends number> = {
 	readonly length: N;
 } & SizedArray<T, N>;
 
+export type SizeOf<T extends { readonly length: number }> = T extends {
+	readonly length: infer V;
+}
+	? V
+	: never;
+
 export type SizedArray<T, N extends number> = number extends N
 	? T[]
 	: N extends 0

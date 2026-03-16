@@ -35,7 +35,7 @@ document.body.append(
 		const p3 = addHandle('end', { x: 0.7, y: 0.9 });
 		const bezier = computed(() => bezier3FromPts(p0, p1, p2, p3));
 		//const bezier = computed(() => bezier3FromQuad(p0, p1, p2, p3));
-		addSVGPath('ctl', () => bezier3SVG(bezier.current, undefined, 'M', 'L'));
+		addSVGPath('ctl', () => bezier3SVG(bezier.current, undefined, 'M', true));
 		addSVGPath('curve', () => bezier3SVG(bezier.current));
 
 		addSVGPath('intersections', () => {

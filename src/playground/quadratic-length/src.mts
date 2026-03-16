@@ -298,7 +298,7 @@ document.body.append(
 		const p1 = addHandle('mid', { x: 0.9, y: 0.1 });
 		const p2 = addHandle('end', { x: 0.1, y: 0.9 });
 		const bezier = computed(() => bezier2FromPts(p0, p1, p2));
-		addSVGPath('ctl', () => bezier2SVG(bezier.current, undefined, 'M', 'L'));
+		addSVGPath('ctl', () => bezier2SVG(bezier.current, undefined, 'M', true));
 		addSVGPath('curve', () => bezier2SVG(bezier.current));
 
 		addText(() => {

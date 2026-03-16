@@ -1,4 +1,4 @@
-import type { SizedArray } from '../../../util/SizedArray.mts';
+import type { SizedArray, SizeOf } from '../../../util/SizedArray.mts';
 import { internalMatFromFlat, type Matrix } from '../../Matrix.mts';
 import type { Vector } from '../../Vector.mts';
 
@@ -6,10 +6,6 @@ export interface Pt {
 	readonly x: number;
 	readonly y: number;
 	z?: never;
-}
-
-export interface PtWithDist extends Pt {
-	readonly d: number;
 }
 
 export function ptsFromMat<N extends number>({
@@ -23,34 +19,18 @@ export function ptsFromMat<N extends number>({
 	return r as SizedArray<Pt, N>;
 }
 
-export function matFromPts<const T extends Pt[]>(pts: T) {
+export function matFromPts<const T extends readonly Pt[]>(pts: T) {
 	const v: number[] = [];
 	for (const pt of pts) {
 		v.push(pt.x, pt.y);
 	}
-	return internalMatFromFlat(v, pts.length as T['length'], 2);
+	return internalMatFromFlat(v, pts.length as SizeOf<T>, 2);
 }
 
 export const ptFromVec = ({ v: [x, y] }: Vector<2>): Pt => ({ x, y });
 
 export const vecFromPt = ({ x, y }: Pt): Vector<2> =>
 	internalMatFromFlat([x, y], 1, 2);
-
-export function ptPolyline(points: Pt[]): PtWithDist[] {
-	if (!points.length) {
-		return [];
-	}
-	let distance = 0;
-	let prev = points[0]!;
-	const r: PtWithDist[] = [{ ...prev, d: 0 }];
-	for (let i = 1; i < points.length; ++i) {
-		const pt = points[i]!;
-		distance += ptDist(prev, pt);
-		r.push({ ...pt, d: distance });
-		prev = pt;
-	}
-	return r;
-}
 
 export const PT0: { readonly x: 0; readonly y: 0 } = { x: 0, y: 0 };
 

@@ -5,7 +5,10 @@ export interface AxisAlignedBox {
 	readonly h: Pt;
 }
 
-export function aaBoxFromXY(x: number[], y: number[]): AxisAlignedBox {
+export function aaBoxFromXY(
+	x: readonly number[],
+	y: readonly number[],
+): AxisAlignedBox {
 	const minX = Math.min(...x);
 	const maxX = Math.max(...x);
 	const minY = Math.min(...y);

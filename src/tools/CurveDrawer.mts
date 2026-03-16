@@ -7,7 +7,8 @@ import {
 	bezier3Normalise,
 	nBezier3Area,
 } from '../math/geometry/2d/NormalisedCubicBezier.mts';
-import { ptDist, type Pt, type PtWithDist } from '../math/geometry/2d/Pt.mts';
+import { ptDist, type Pt } from '../math/geometry/2d/Pt.mts';
+import type { PtWithDist } from '../math/geometry/2d/Polyline2D.mts';
 
 export class CurveDrawer {
 	declare private _state:
@@ -32,7 +33,7 @@ export class CurveDrawer {
 		this._state = undefined;
 	}
 
-	_fit(points: PtWithDist[], prevControl: Pt | null): Fit {
+	_fit(points: readonly PtWithDist[], prevControl: Pt | null): Fit {
 		if (!points.length) {
 			throw new Error('nothing to fit');
 		}

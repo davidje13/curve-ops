@@ -1,4 +1,5 @@
 import type { Decrement, Increment } from '../../types/numeric.mts';
+import { cached } from '../../util/cached.mts';
 import {
 	zeros,
 	type SizedArrayWithLength,
@@ -134,22 +135,15 @@ export function bezierFromPolylineVertsLeastSquaresFixEnds<
 		for (let i = 1; i < polyline.length - 1; ++i) {
 			const pt = polyline[i]!;
 			const t = (pt.d - dist0) * distM;
-			const rawTPowers = powers(t, reducedM);
+			const rawTPowers = powers(t, reducedM - 1, t);
 			const lastT = rawTPowers.pop()!;
-			Tv.push(rawTPowers.slice(1).map((t) => t - lastT));
+			Tv.push(rawTPowers.map((t) => t - lastT));
 			adjustedPoints.push(vecSub(pt, vecMad(dN, lastT, p0)));
 		}
 		const TTinv = matLeftInverse(matFrom(Tv));
 		if (TTinv) {
-			const clippedM = matWindow(
-				bezierM(reducedM),
-				1,
-				1,
-				reducedM - 2,
-				reducedM - 2,
-			);
 			const controls = matMul(
-				matInverse(clippedM)!,
+				bezierMInvFixEnds(reducedM),
 				matMul(TTinv, matFromVecArray(adjustedPoints)),
 			);
 			const reducedBezier = matFromVecArray([
@@ -165,6 +159,18 @@ export function bezierFromPolylineVertsLeastSquaresFixEnds<
 	// draw a straight line from start to end
 	return bezierFromEndpoints(p0, pN, m);
 }
+
+const bezierMInvFixEnds = /*@__PURE__*/ cached(
+	<Points extends number>(
+		n: Points,
+	): SquareMatrix<Decrement<Decrement<Points>>> => {
+		const Minv = matInverse(matWindow(bezierM(n), 1, 1, n - 2, n - 2));
+		if (!Minv) {
+			throw new Error('unexpected non-invertible bezier matrix');
+		}
+		return Minv;
+	},
+);
 
 export const bezierAt = <Points extends number, Dim extends number>(
 	curve: Bezier<Points, Dim>,
@@ -269,42 +275,30 @@ export function bezierLowerOrder<Points extends number, Dim extends number>(
 	return matMul(transform, curve);
 }
 
-const BEZIER_M_CACHE = /*@__PURE__*/ new Map<number, Matrix>();
-export function bezierM<Points extends number>(
-	n: Points,
-): SquareMatrix<Points> {
-	const cached = BEZIER_M_CACHE.get(n);
-	if (cached) {
-		return cached as SquareMatrix<Points>;
-	}
-	const v = zeros(n * n);
-	for (let i = 0; i < n; ++i) {
-		const b1 = binomial(n - 1, i) * ((i & 1) * 2 - 1);
-		for (let j = 0; j <= i; ++j) {
-			const b2 = binomial(i, j) * ((j & 1) * 2 - 1);
-			v[i * n + j] = b1 * b2;
+export const bezierM = /*@__PURE__*/ cached(
+	<Points extends number>(n: Points): SquareMatrix<Points> => {
+		const v = zeros(n * n);
+		for (let i = 0; i < n; ++i) {
+			const b1 = binomial(n - 1, i) * ((i & 1) * 2 - 1);
+			for (let j = 0; j <= i; ++j) {
+				const b2 = binomial(i, j) * ((j & 1) * 2 - 1);
+				v[i * n + j] = b1 * b2;
+			}
 		}
-	}
-	const m = internalMatFromFlat(v, n, n);
-	BEZIER_M_CACHE.set(n, m);
-	return m;
-}
+		const m = internalMatFromFlat(v, n, n);
+		return m;
+	},
+);
 
-const BEZIER_M_INV_CACHE = /*@__PURE__*/ new Map<number, Matrix>();
-export function bezierMInv<Points extends number>(
-	n: Points,
-): SquareMatrix<Points> {
-	const cached = BEZIER_M_INV_CACHE.get(n);
-	if (cached) {
-		return cached as SquareMatrix<Points>;
-	}
-	const Minv = matInverse(bezierM(n));
-	if (!Minv) {
-		throw new Error('unexpected non-invertible bezier matrix');
-	}
-	BEZIER_M_INV_CACHE.set(n, Minv);
-	return Minv;
-}
+export const bezierMInv = /*@__PURE__*/ cached(
+	<Points extends number>(n: Points): SquareMatrix<Points> => {
+		const Minv = matInverse(bezierM(n));
+		if (!Minv) {
+			throw new Error('unexpected non-invertible bezier matrix');
+		}
+		return Minv;
+	},
+);
 
 export function bezierDerivative<Points extends number, Dim extends number>({
 	v,
@@ -399,9 +393,10 @@ export function bezierSplit<Points extends number, Dim extends number>(
 function powers<N extends number>(
 	base: number,
 	n: N,
+	begin = 1,
 ): SizedArrayWithLength<number, N> {
 	const r: number[] = [];
-	for (let j = 0, v = 1; j < n; ++j) {
+	for (let j = 0, v = begin; j < n; ++j) {
 		r.push(v);
 		v *= base;
 	}

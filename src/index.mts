@@ -33,6 +33,7 @@ export {
 	bezier3FromBezier2,
 	bezier3FromLine,
 	bezier3FromPolylinePtsLeastSquares,
+	bezier3FromPolylinePtsLeastSquaresFixEnds,
 	bezier3FromPts,
 	bezier3FromQuad,
 	bezier3LengthEstimate,
@@ -51,6 +52,7 @@ export {
 	bezier3XTurningPointTs,
 	bezier3YAt,
 	bezier3YTurningPointTs,
+	polynomialFromBezier3Values,
 } from './math/geometry/2d/CubicBezier.mts';
 
 export {
@@ -62,8 +64,6 @@ export {
 	intersectNBezier3CircleFn,
 	isOverlapAABoxCircle,
 } from './math/geometry/2d/intersection.mts';
-
-export { leastSquaresFitCubicFixEnds } from './math/geometry/2d/leastSquaresBezier.mts';
 
 export {
 	type LineSegment,
@@ -109,8 +109,10 @@ export {
 export {
 	type PtWithDist,
 	type Polyline2D,
+	polyline2DFromPolyline,
 	polyline2DFromPts,
 	polyline2DSVG,
+	polylineFromPolyline2D,
 } from './math/geometry/2d/Polyline2D.mts';
 
 export {
@@ -149,6 +151,7 @@ export {
 	bezier2Derivative,
 	bezier2FromLine,
 	bezier2FromPolylinePtsLeastSquares,
+	bezier2FromPolylinePtsLeastSquaresFixEnds,
 	bezier2FromPts,
 	bezier2LengthEstimate,
 	bezier2M,
@@ -166,6 +169,7 @@ export {
 	bezier2XTurningPointTs,
 	bezier2YAt,
 	bezier2YTurningPointTs,
+	polynomialFromBezier2Values,
 } from './math/geometry/2d/QuadraticBezier.mts';
 
 export {
@@ -208,6 +212,7 @@ export {
 	bezierSplit,
 	bezierTangentAt,
 	bezierTranslate,
+	polynomialFromBezierValues,
 } from './math/geometry/Bezier.mts';
 
 export {

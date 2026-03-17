@@ -459,7 +459,7 @@ export const mat1Determinant = ({ v: [v00] }: SquareMatrix<1>): number => v00;
 export function mat1Inverse({
 	v: [v00],
 }: SquareMatrix<1>): SquareMatrix<1> | null {
-	if (Math.abs(v00) < 1e-8) {
+	if (Math.abs(v00) < Number.EPSILON) {
 		return null;
 	}
 	return { v: [1 / v00], m: 1, n: 1 };

@@ -1,8 +1,8 @@
 import {
+	bezier3FromPolylinePtsLeastSquaresFixEnds,
 	bezier3LengthEstimate,
 	type CubicBezier,
 } from '../math/geometry/2d/CubicBezier.mts';
-import { leastSquaresFitCubicFixEnds } from '../math/geometry/2d/leastSquaresBezier.mts';
 import {
 	bezier3Normalise,
 	nBezier3Area,
@@ -39,7 +39,10 @@ export class CurveDrawer {
 		}
 		const p0 = points[0]!;
 		const pN = points[points.length - 1]!;
-		const curve = leastSquaresFitCubicFixEnds(points, prevControl);
+		const curve = bezier3FromPolylinePtsLeastSquaresFixEnds(
+			points,
+			prevControl,
+		);
 		if (!curve || points.length < 2) {
 			return {
 				n: points.length,

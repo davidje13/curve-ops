@@ -10,22 +10,22 @@ import {
 	internalMatFromFlat,
 	MAT2ROT90,
 	matAddColumnwise,
-	matFrom,
 	matFromArrayFn,
 	matFromDiag,
 	matInverse,
 	matLeftInverse,
 	matMul,
+	matMulABTranspose,
 	matWindow,
 	type Matrix,
 	type SquareMatrix,
 } from '../Matrix.mts';
-import type { Polynomial } from '../Polynomial.mts';
+import { polynomialRoots, type Polynomial } from '../Polynomial.mts';
 import {
 	matFromVecArray,
 	vec3Cross,
 	vecAdd,
-	vecArrayFromMat,
+	vecFrom,
 	vecLerp,
 	vecMad,
 	vecNorm,
@@ -131,26 +131,31 @@ export function bezierFromPolylineVertsLeastSquaresFixEnds<
 
 		const reducedM = Math.min(polyline.length, m);
 		const adjustedPoints: Vector<Dim>[] = [];
-		const Tv: number[][] = [];
+		const Tv: number[] = [];
 		for (let i = 1; i < polyline.length - 1; ++i) {
 			const pt = polyline[i]!;
 			const t = (pt.d - dist0) * distM;
 			const rawTPowers = powers(t, reducedM - 1, t);
 			const lastT = rawTPowers.pop()!;
-			Tv.push(rawTPowers.map((t) => t - lastT));
+			Tv.push(...rawTPowers.map((tN) => tN - lastT));
 			adjustedPoints.push(vecSub(pt, vecMad(dN, lastT, p0)));
 		}
-		const TTinv = matLeftInverse(matFrom(Tv));
+		const TTinv = matLeftInverse(
+			internalMatFromFlat(Tv, polyline.length - 2, reducedM - 2),
+		);
 		if (TTinv) {
-			const controls = matMul(
-				bezierMInvFixEnds(reducedM),
-				matMul(TTinv, matFromVecArray(adjustedPoints)),
-			);
-			const reducedBezier = matFromVecArray([
+			const controls = matAddColumnwise(
+				matMul(
+					bezierMInvFixEnds(reducedM),
+					matMul(TTinv, matFromVecArray(adjustedPoints)),
+				),
 				p0,
-				...vecArrayFromMat(controls).map((pt) => vecAdd(pt, p0)),
-				pN,
-			]);
+			);
+			const reducedBezier = internalMatFromFlat(
+				[...p0.v, ...controls.v, ...pN.v],
+				reducedM,
+				controls.n,
+			);
 			return bezierElevateOrderTo(reducedBezier, m);
 		}
 	}
@@ -212,6 +217,28 @@ export const bezierPolynomials = <Points extends number, Dim extends number>(
 	}
 	return r as SizedArrayWithLength<Polynomial<Points>, Dim>;
 };
+
+export const polynomialFromBezierValues = <P extends number[]>(
+	...values: P
+): Polynomial<SizeOf<P>> =>
+	matMulABTranspose(bezierM(values.length), vecFrom(...values)).v as Polynomial<
+		SizeOf<P>
+	>;
+
+export function internalSkewedTValues(gradient0: number, m: number) {
+	if (m < 3 || m > 5 || Math.abs(gradient0 - 1) < Number.EPSILON) {
+		return (p: number) => p;
+	}
+	const n = m - 1;
+	const pts = [0];
+	const c1 = gradient0 / n;
+	for (let i = 0; i < n; ++i) {
+		pts.push(c1 + (1 - c1) * (i / n));
+	}
+	const poly = polynomialFromBezierValues(...pts);
+	return (p: number) =>
+		polynomialRoots(poly, p, { min: 0, max: 0, maxError: 1e-2 })[0] ?? p;
+}
 
 export const bezierOrder = (curve: Bezier<number, number>) => curve.m - 1;
 

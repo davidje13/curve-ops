@@ -1,8 +1,13 @@
 import {
+	internalMatFromFlat,
+	mat2LeftInverse,
+	mat3LeftInverse,
 	mat4LeftInverse,
 	matFrom,
 	matFromArrayFn,
 	matMul,
+	matReshape,
+	matScale,
 } from '../../Matrix.mts';
 import {
 	polynomial3Roots,
@@ -16,6 +21,8 @@ import {
 	matFromPts,
 	ptAdd,
 	ptDist,
+	ptDist2,
+	ptDot,
 	ptLen,
 	ptLen2,
 	ptLerp,
@@ -31,6 +38,7 @@ import {
 import {
 	bezier2At,
 	bezier2FromPolylinePtsLeastSquares,
+	bezier2FromPolylinePtsLeastSquaresFixEnds,
 	type QuadraticBezier,
 } from './QuadraticBezier.mts';
 
@@ -79,6 +87,87 @@ export function bezier3FromPolylinePtsLeastSquares(
 	const curve = bezier2FromPolylinePtsLeastSquares(points);
 	return curve ? bezier3FromBezier2(curve) : null;
 }
+
+export function bezier3FromPolylinePtsLeastSquaresFixEnds(
+	points: Polyline2D,
+	prevControl: Pt | null = null,
+): CubicBezier | null {
+	if (!points.length) {
+		return null;
+	}
+
+	const p0 = points[0]!;
+	const pN = points[points.length - 1]!;
+
+	if (points.length > 3) {
+		const dist0 = p0.d;
+		const distM = 1 / (pN.d - dist0);
+		const dN = ptSub(pN, p0);
+
+		if (prevControl && ptDist2(p0, prevControl)) {
+			const c1n = ptNorm(ptSub(p0, prevControl));
+			const tAt = internalSkewedTValues3(ptDot(c1n, ptNorm(dN)) ** 2);
+			const Tv: [number, number][] = [];
+			const adjustedPoints: Pt[] = [];
+			for (let i = 1; i < points.length - 1; ++i) {
+				const pt = points[i]!;
+				const t = tAt((pt.d - dist0) * distM);
+				const tt = t * t;
+				const ttt = tt * t;
+				Tv.push([t - tt, t - ttt]);
+				adjustedPoints.push(ptSub(pt, ptMad(dN, ttt, p0)));
+			}
+			const PP = matFromPts(adjustedPoints);
+			const TT = matFromArrayFn(Tv, ([t1, t2]) => {
+				const t2mt1 = t2 - t1;
+				return [c1n.x * (t1 - t2mt1), t2mt1, 0, c1n.y * (t1 - t2mt1), 0, t2mt1];
+			});
+			const TTinv = mat3LeftInverse(matReshape(TT, 3));
+			if (TTinv) {
+				const C = matScale(matMul(TTinv, matReshape(PP, 1)), 1 / 3);
+				const [c1l, c2x, c2y] = C.v;
+				if (c1l > 0) {
+					return {
+						p0,
+						c1: ptMad(c1n, c1l, p0),
+						c2: ptAdd(p0, { x: c2x, y: c2y }),
+						p3: pN,
+					};
+				}
+			}
+		}
+
+		const Tv: number[] = [];
+		const adjustedPoints: Pt[] = [];
+		for (let i = 1; i < points.length - 1; ++i) {
+			const pt = points[i]!;
+			const t = (pt.d - dist0) * distM;
+			const tt = t * t;
+			const ttt = tt * t;
+			Tv.push(t - ttt, tt - ttt);
+			adjustedPoints.push(ptSub(pt, ptMad(dN, ttt, p0)));
+		}
+		const TTinv = mat2LeftInverse(
+			internalMatFromFlat(Tv, points.length - 2, 2),
+		);
+		if (TTinv) {
+			const C = matMul(
+				bezier3MInvFixEnds,
+				matMul(TTinv, matFromPts(adjustedPoints)),
+			);
+			const [c1, c2] = ptsFromMat(C);
+			return { p0, c1: ptAdd(c1, p0), c2: ptAdd(c2, p0), p3: pN };
+		}
+	}
+
+	const curve = bezier2FromPolylinePtsLeastSquaresFixEnds(points, prevControl);
+	return curve ? bezier3FromBezier2(curve) : null;
+}
+
+const bezier3MInvFixEnds = /*@__PURE__*/ matFrom([
+	[1 / 3, 0],
+	[2 / 3, 1 / 3],
+]);
 
 export const bezier3M = /*@__PURE__*/ matFrom([
 	[1, 0, 0, 0],
@@ -143,29 +232,40 @@ export function bezier3YAt({ p0, c1, c2, p3 }: CubicBezier, t: number): number {
 	return p0.y * T * T * T + (3 * T * (c1.y * T + c2.y * t) + p3.y * t * t) * t;
 }
 
+export const polynomialFromBezier3Values = (
+	p0: number,
+	c1: number,
+	c2: number,
+	p3: number,
+): Polynomial<4> => [
+	p0,
+	3 * (c1 - p0),
+	3 * (p0 - 2 * c1 + c2),
+	p3 - p0 + 3 * (c1 - c2),
+];
+
+function internalSkewedTValues3(gradient0: number) {
+	const c1 = gradient0 * (1 / 3);
+	const poly = polynomialFromBezier3Values(0, c1, (1 + c1) * 0.5, 1);
+	return (p: number) =>
+		polynomial4Roots(poly, p).filter((t) => t >= 0 && t <= 1)[0] ?? p;
+}
+
 export const bezier3PolynomialX = ({
 	p0,
 	c1,
 	c2,
 	p3,
-}: CubicBezier): Polynomial<4> => [
-	p0.x,
-	3 * (c1.x - p0.x),
-	3 * (p0.x - 2 * c1.x + c2.x),
-	p3.x - p0.x + 3 * (c1.x - c2.x),
-];
+}: CubicBezier): Polynomial<4> =>
+	polynomialFromBezier3Values(p0.x, c1.x, c2.x, p3.x);
 
 export const bezier3PolynomialY = ({
 	p0,
 	c1,
 	c2,
 	p3,
-}: CubicBezier): Polynomial<4> => [
-	p0.y,
-	3 * (c1.y - p0.y),
-	3 * (p0.y - 2 * c1.y + c2.y),
-	p3.y - p0.y + 3 * (c1.y - c2.y),
-];
+}: CubicBezier): Polynomial<4> =>
+	polynomialFromBezier3Values(p0.y, c1.y, c2.y, p3.y);
 
 export const bezier3Derivative = ({
 	p0,

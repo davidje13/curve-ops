@@ -1,16 +1,18 @@
 import {
 	type Pt,
+	bezier2FromPolylinePtsLeastSquaresFixEnds,
+	bezier3FromPolylinePtsLeastSquaresFixEnds,
+	bezierFromBezier2,
 	bezierFromBezier3,
 	bezierFromPolylineVertsLeastSquares,
 	bezierFromPolylineVertsLeastSquaresFixEnds,
 	bezierSVG,
-	leastSquaresFitCubicFixEnds,
+	polyline2DFromPolyline,
 	polyline2DSVG,
 	polylineFromVecs,
 	ptLerp,
 	vecFromPt,
 } from '../../index.mts';
-import { polyline2DFromPolyline } from '../../math/geometry/2d/Polyline2D.mts';
 import {
 	makeCheckbox,
 	makeInteractive,
@@ -63,11 +65,17 @@ document.body.append(
 					);
 				} else {
 					if (curveOrder.current() === 3) {
-						const bezier3 = leastSquaresFitCubicFixEnds(
+						const bezier3 = bezier3FromPolylinePtsLeastSquaresFixEnds(
 							polyline2DFromPolyline(polyline.current),
 							pprev,
 						);
 						return bezier3 ? bezierFromBezier3(bezier3) : null;
+					} else if (curveOrder.current() === 2) {
+						const bezier2 = bezier2FromPolylinePtsLeastSquaresFixEnds(
+							polyline2DFromPolyline(polyline.current),
+							pprev,
+						);
+						return bezier2 ? bezierFromBezier2(bezier2) : null;
 					}
 					return null;
 				}

@@ -6,7 +6,7 @@ import {
 	bezier2SVG,
 	matFrom,
 } from '../../index.mts';
-import { makeInteractive, makeNumericInput, mk } from '../dom.mts';
+import { makeInteractive, makeNumericInput, makeSelect, mk } from '../dom.mts';
 import { TaskManager } from '../TaskManager.mts';
 
 const scale = new Uint32Array(1024);
@@ -152,17 +152,7 @@ function makeGraph(w: number, h: number, zoom: number) {
 	errorCanvas.style.imageRendering = 'pixelated';
 	scaleCanvas.style.width = '10px';
 	scaleCanvas.style.height = `${h * zoom}px`;
-	const viewSelect = mk(
-		'select',
-		{},
-		views.map((view, i) => mk('option', { value: i }, [view.name])),
-	) as HTMLSelectElement;
-	viewSelect.selectedIndex = 0;
-	viewSelect.addEventListener('change', () => {
-		const view = views[viewSelect.selectedIndex];
-		if (!view) {
-			return;
-		}
+	const viewSelect = makeSelect(views, 0, (view) => {
 		p0x.set(view.p0x);
 		p0y.set(view.p0y);
 		p2x.set(view.p2x);
@@ -254,7 +244,7 @@ function makeGraph(w: number, h: number, zoom: number) {
 		errorCanvas,
 		scaleCanvas,
 		mk('div', { class: 'options' }, [
-			viewSelect,
+			viewSelect.input,
 			mk('br'),
 			'p0: ',
 			mk('label', {}, ['x ', p0x.input]),

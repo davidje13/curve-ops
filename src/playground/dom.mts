@@ -93,6 +93,34 @@ export function makeCheckbox(
 	};
 }
 
+export function makeSelect<T extends { name: string }>(
+	options: T[],
+	initialIndex: number,
+	onChange: (v: T) => void,
+) {
+	const select = mk(
+		'select',
+		{},
+		options.map((opt, i) => mk('option', { value: i }, [opt.name])),
+	) as HTMLSelectElement;
+	select.selectedIndex = initialIndex;
+	select.addEventListener('change', () => {
+		const opt = options[select.selectedIndex];
+		if (!opt) {
+			return;
+		}
+		onChange(opt);
+	});
+
+	return {
+		input: select,
+		current: () => options[select.selectedIndex]!,
+		set: (index: number) => {
+			select.selectedIndex = index;
+		},
+	};
+}
+
 interface InteractiveScope {
 	addElement<T extends Element>(o: T): T;
 	addPlaygroundElement<T extends Element>(o: T): T;

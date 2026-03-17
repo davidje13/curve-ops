@@ -24,7 +24,7 @@ export function polyline2DFromPts(points: readonly Pt[]): Polyline2D {
 }
 
 export const polyline2DSVG = (
-	poly: Polyline2D,
+	poly: readonly Pt[],
 	precision?: number | undefined,
 	prefix = 'M',
 ) => prefix + poly.map((pt) => ptSVG(pt, precision)).join('L');

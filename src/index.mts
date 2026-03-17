@@ -224,6 +224,21 @@ export {
 export { binomial } from './math/binomial.mts';
 
 export {
+	type ComplexNumber,
+	addZ,
+	addZR,
+	divRZ,
+	divZ,
+	expZ,
+	invZ,
+	mulZ,
+	mulZR,
+	negZ,
+	subRZ,
+	subZ,
+} from './math/complex.mts';
+
+export {
 	mat1Eigenvalues,
 	mat1Eigenvector,
 	mat2Eigenvalues,
@@ -235,6 +250,17 @@ export {
 	matEigenvalues,
 	matEigenvector,
 } from './math/eigen.mts';
+
+export {
+	erf,
+	erfZ,
+	erfc,
+	erfcZ,
+	fresnelCIntegral,
+	fresnelSIntegral,
+	unscaledFresnelCIntegral,
+	unscaledFresnelSIntegral,
+} from './math/functions.mts';
 
 export {
 	MAT1IDENT,

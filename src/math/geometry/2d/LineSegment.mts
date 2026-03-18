@@ -1,6 +1,8 @@
 import { polynomial2Roots, type Polynomial } from '../../Polynomial.mts';
+import type { Bezier } from '../Bezier.mts';
 import type { AxisAlignedBox } from './AxisAlignedBox.mts';
 import {
+	matFromPts,
 	ptAdd,
 	ptCross,
 	ptDist,
@@ -11,6 +13,7 @@ import {
 	ptMul,
 	ptNorm,
 	ptRot90,
+	ptsFromMat,
 	ptSub,
 	ptSVG,
 	ptTransform,
@@ -23,6 +26,12 @@ export interface LineSegment {
 }
 
 export const lineFromPts = (p0: Pt, p1: Pt): LineSegment => ({ p0, p1 });
+
+export const lineFromBezier = (curve: Bezier<2, 2>): LineSegment =>
+	lineFromPts(...ptsFromMat(curve));
+
+export const bezierFromLine = ({ p0, p1 }: LineSegment): Bezier<2, 2> =>
+	matFromPts([p0, p1]);
 
 export const lineAt = ({ p0, p1 }: LineSegment, t: number) => ptLerp(p0, p1, t);
 

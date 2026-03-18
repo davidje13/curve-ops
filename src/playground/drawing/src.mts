@@ -1,10 +1,15 @@
 import {
+	bezier2At,
 	bezier3At,
 	bezier3SVG,
+	bezierAt,
+	bezierFromVecs,
 	CurveDrawer,
 	fresnelCIntegral,
 	fresnelSIntegral,
 	polyline2DSVG,
+	ptFromVec,
+	vecFrom,
 	type Pt,
 } from '../../index.mts';
 import {
@@ -43,6 +48,13 @@ const pointsOptions: { name: string; points: Pt[] }[] = [
 		})),
 	},
 	{
+		name: 'sine',
+		points: ptFn((t) => ({
+			x: t * 0.8 + 0.1,
+			y: Math.sin(t * Math.PI * 6) * 0.4 + 0.5,
+		})),
+	},
+	{
 		name: 'horizontal line',
 		points: ptFn((t) => ({
 			x: t * 0.8 + 0.1,
@@ -69,6 +81,26 @@ const pointsOptions: { name: string; points: Pt[] }[] = [
 		),
 	},
 	{
+		name: 'smooth corner',
+		points: ptFn((t) => {
+			const r = 0.03;
+			const le = 0.4 - r;
+			const lc = 0.5 * Math.PI * r;
+			const p = t * (lc + le * 2);
+			if (p < le) {
+				return { x: 0.5, y: 0.5 - r - le + p };
+			} else if (p < le + lc) {
+				const a = (Math.PI * 0.5 * (p - le)) / lc;
+				return {
+					x: 0.5 + r * (1 - Math.cos(a)),
+					y: 0.5 - r * (1 - Math.sin(a)),
+				};
+			} else {
+				return { x: 0.5 + r + p - le - lc, y: 0.5 };
+			}
+		}),
+	},
+	{
 		name: 'accute corner',
 		points: ptFn((t) =>
 			t > 0.5
@@ -77,6 +109,30 @@ const pointsOptions: { name: string; points: Pt[] }[] = [
 						x: 0.5 + (1 - 2 * t) * 0.4 * Math.SQRT1_2,
 						y: 0.5 - (1 - 2 * t) * 0.4 * Math.SQRT1_2,
 					},
+		),
+	},
+	{
+		name: 'zigzag',
+		points: ptFn((t) => ({
+			x: t * 0.8 + 0.1,
+			y: Math.abs(((t * 10) % 2) - 1) * 0.2 + 0.4,
+		})),
+	},
+	{
+		name: 'sharp zigzag',
+		points: ptFn((t) => ({
+			x: t * 0.8 + 0.1,
+			y: Math.abs(((t * 50) % 2) - 1) * 0.8 + 0.1,
+		})),
+	},
+	{
+		name: 'quadratic bezier',
+		points: ptFn(
+			bezier2At.bind(null, {
+				p0: { x: 0.1, y: 0.1 },
+				c1: { x: 0.5, y: 0.9 },
+				p2: { x: 0.9, y: 0.1 },
+			}),
 		),
 	},
 	{
@@ -123,6 +179,22 @@ const pointsOptions: { name: string; points: Pt[] }[] = [
 			}),
 		),
 	},
+	{
+		name: 'O(5) bezier',
+		points: ptFn(
+			(() => {
+				const curve = bezierFromVecs([
+					vecFrom(0.1, 0.1),
+					vecFrom(0.9, 0.1),
+					vecFrom(0.9, 0.5),
+					vecFrom(0.1, 0.5),
+					vecFrom(0.1, 0.9),
+					vecFrom(0.9, 0.9),
+				]);
+				return (t) => ptFromVec(bezierAt(curve, t));
+			})(),
+		),
+	},
 ];
 
 function ptFn(fn: (t: number) => Pt, n = 100000): Pt[] {
@@ -148,7 +220,7 @@ document.body.append(
 			},
 			() => hold.replaceChildren(),
 			0.005,
-			100,
+			50,
 			0.0005,
 			0.0008,
 		);
@@ -162,8 +234,8 @@ document.body.append(
 
 			const minStep = makeNumericInput(0, 1, 'any', 0.005, update);
 			const maxN = makeNumericInput(2, 1000, 1, 100, update);
-			const minError = makeNumericInput(0, 1, 'any', 0.0005, update);
-			const maxError = makeNumericInput(0, 1, 'any', 0.0008, update);
+			const minError = makeNumericInput(0, 1, 'any', 0.0002, update);
+			const maxError = makeNumericInput(0, 1, 'any', 0.0003, update);
 			const pointsSelect = makeSelect(pointsOptions, 0, update);
 			addElement(
 				mk('div', {}, [

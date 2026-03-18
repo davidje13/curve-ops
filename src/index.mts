@@ -6,15 +6,7 @@ export {
 	aaBoxSVG,
 } from './math/geometry/2d/AxisAlignedBox.mts';
 
-export {
-	bezier2FromBezier,
-	bezier3FromBezier,
-	bezierFromBezier2,
-	bezierFromBezier3,
-	bezierFromLine,
-	bezierSVG,
-	lineFromBezier,
-} from './math/geometry/2d/bezierConversion.mts';
+export { bezierSVG } from './math/geometry/2d/bezierConversion.mts';
 
 export {
 	type Circle,
@@ -30,6 +22,7 @@ export {
 	bezier3Bisect,
 	bezier3Bounds,
 	bezier3Derivative,
+	bezier3FromBezier,
 	bezier3FromBezier2,
 	bezier3FromLine,
 	bezier3FromPolylinePtsLeastSquares,
@@ -42,6 +35,7 @@ export {
 	bezier3NormalAt,
 	bezier3PolynomialX,
 	bezier3PolynomialY,
+	bezier3RMSDistance,
 	bezier3SVG,
 	bezier3Split,
 	bezier3TangentAt,
@@ -52,6 +46,7 @@ export {
 	bezier3XTurningPointTs,
 	bezier3YAt,
 	bezier3YTurningPointTs,
+	bezierFromBezier3,
 	polynomialFromBezier3Values,
 } from './math/geometry/2d/CubicBezier.mts';
 
@@ -67,11 +62,13 @@ export {
 
 export {
 	type LineSegment,
+	bezierFromLine,
 	intersectLineLine,
 	lineAt,
 	lineBisect,
 	lineBounds,
 	lineDerivative,
+	lineFromBezier,
 	lineFromPts,
 	lineLength,
 	lineMidpoint,
@@ -149,6 +146,7 @@ export {
 	bezier2Bisect,
 	bezier2Bounds,
 	bezier2Derivative,
+	bezier2FromBezier,
 	bezier2FromLine,
 	bezier2FromPolylinePtsLeastSquares,
 	bezier2FromPolylinePtsLeastSquaresFixEnds,
@@ -159,6 +157,7 @@ export {
 	bezier2NormalAt,
 	bezier2PolynomialX,
 	bezier2PolynomialY,
+	bezier2RMSDistance,
 	bezier2SVG,
 	bezier2Split,
 	bezier2TangentAt,
@@ -169,6 +168,7 @@ export {
 	bezier2XTurningPointTs,
 	bezier2YAt,
 	bezier2YTurningPointTs,
+	bezierFromBezier2,
 	polynomialFromBezier2Values,
 } from './math/geometry/2d/QuadraticBezier.mts';
 
@@ -295,6 +295,8 @@ export {
 	matAddColumnwise,
 	matBinaryOp,
 	matDeterminant,
+	matElementNorm,
+	matElementNorm2,
 	matFrom,
 	matFromArray,
 	matFromArrayFn,

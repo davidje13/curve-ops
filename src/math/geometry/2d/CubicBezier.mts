@@ -1,19 +1,21 @@
 import {
-	internalMatFromFlat,
 	mat2LeftInverse,
 	mat3LeftInverse,
 	mat4LeftInverse,
+	matElementNorm,
 	matFrom,
 	matFromArrayFn,
 	matMul,
 	matReshape,
 	matScale,
+	matSub,
 } from '../../Matrix.mts';
 import {
 	polynomial3Roots,
 	polynomial4Roots,
 	type Polynomial,
 } from '../../Polynomial.mts';
+import type { Bezier } from '../Bezier.mts';
 import { aaBoxFromXY, type AxisAlignedBox } from './AxisAlignedBox.mts';
 import type { LineSegment } from './LineSegment.mts';
 import type { Polyline2D } from './Polyline2D.mts';
@@ -22,7 +24,6 @@ import {
 	ptAdd,
 	ptDist,
 	ptDist2,
-	ptDot,
 	ptLen,
 	ptLen2,
 	ptLerp,
@@ -55,6 +56,9 @@ export const bezier3FromPts = (
 	c2: Pt,
 	p3: Pt,
 ): CubicBezier => ({ p0, c1, c2, p3 });
+
+export const bezier3FromBezier = (curve: Bezier<4, 2>): CubicBezier =>
+	bezier3FromPts(...ptsFromMat(curve));
 
 export function bezier3FromPolylinePtsLeastSquares(
 	points: Polyline2D,
@@ -100,63 +104,83 @@ export function bezier3FromPolylinePtsLeastSquaresFixEnds(
 	const pN = points[points.length - 1]!;
 
 	if (points.length > 3) {
+		const candidates: { _curve: CubicBezier; _distMult: number }[] = [];
 		const dist0 = p0.d;
 		const distM = 1 / (pN.d - dist0);
 		const dN = ptSub(pN, p0);
 
-		if (prevControl && ptDist2(p0, prevControl)) {
-			const c1n = ptNorm(ptSub(p0, prevControl));
-			const tAt = internalSkewedTValues3(ptDot(c1n, ptNorm(dN)) ** 2);
-			const Tv: [number, number][] = [];
-			const adjustedPoints: Pt[] = [];
-			for (let i = 1; i < points.length - 1; ++i) {
-				const pt = points[i]!;
-				const t = tAt((pt.d - dist0) * distM);
-				const tt = t * t;
-				const ttt = tt * t;
-				Tv.push([t - tt, t - ttt]);
-				adjustedPoints.push(ptSub(pt, ptMad(dN, ttt, p0)));
-			}
-			const PP = matFromPts(adjustedPoints);
-			const TT = matFromArrayFn(Tv, ([t1, t2]) => {
-				const t2mt1 = t2 - t1;
-				return [c1n.x * (t1 - t2mt1), t2mt1, 0, c1n.y * (t1 - t2mt1), 0, t2mt1];
-			});
-			const TTinv = mat3LeftInverse(matReshape(TT, 3));
-			if (TTinv) {
-				const C = matScale(matMul(TTinv, matReshape(PP, 1)), 1 / 3);
-				const [c1l, c2x, c2y] = C.v;
-				if (c1l > 0) {
-					return {
-						p0,
-						c1: ptMad(c1n, c1l, p0),
-						c2: ptAdd(p0, { x: c2x, y: c2y }),
-						p3: pN,
-					};
-				}
-			}
-		}
-
-		const Tv: number[] = [];
+		const Tv: [number, number][] = [];
 		const adjustedPoints: Pt[] = [];
 		for (let i = 1; i < points.length - 1; ++i) {
 			const pt = points[i]!;
 			const t = (pt.d - dist0) * distM;
 			const tt = t * t;
 			const ttt = tt * t;
-			Tv.push(t - ttt, tt - ttt);
+			Tv.push([t - ttt, tt - ttt]);
 			adjustedPoints.push(ptSub(pt, ptMad(dN, ttt, p0)));
 		}
-		const TTinv = mat2LeftInverse(
-			internalMatFromFlat(Tv, points.length - 2, 2),
-		);
+
+		if (prevControl && ptDist2(p0, prevControl)) {
+			const c1n = ptNorm(ptSub(p0, prevControl));
+			const TTinv = mat3LeftInverse(
+				matReshape(
+					matFromArrayFn(Tv, ([t1, t2]) => [
+						c1n.x * (t1 - 2 * t2),
+						t2,
+						0,
+						c1n.y * (t1 - 2 * t2),
+						0,
+						t2,
+					]),
+					3,
+				),
+			);
+			if (TTinv) {
+				const C = matScale(
+					matMul(TTinv, matReshape(matFromPts(adjustedPoints), 1)),
+					1 / 3,
+				);
+				const [c1l, c2x, c2y] = C.v;
+				if (c1l > 0) {
+					candidates.push({
+						_curve: {
+							p0,
+							c1: ptMad(c1n, c1l, p0),
+							c2: ptAdd(p0, { x: c2x, y: c2y }),
+							p3: pN,
+						},
+						_distMult: 1,
+					});
+				}
+			}
+		}
+
+		const TTinv = mat2LeftInverse(matFrom(Tv));
 		if (TTinv) {
 			const C = matMul(
 				bezier3MInvFixEnds,
 				matMul(TTinv, matFromPts(adjustedPoints)),
 			);
 			const [c1, c2] = ptsFromMat(C);
-			return { p0, c1: ptAdd(c1, p0), c2: ptAdd(c2, p0), p3: pN };
+			candidates.push({
+				_curve: { p0, c1: ptAdd(c1, p0), c2: ptAdd(c2, p0), p3: pN },
+				_distMult: 4,
+			});
+		}
+
+		if (candidates.length === 1) {
+			return candidates[0]!._curve;
+		} else if (candidates.length > 1) {
+			let best: CubicBezier | undefined;
+			let bestDist = Number.POSITIVE_INFINITY;
+			for (const c of candidates) {
+				const dist = bezier3RMSDistance(c._curve, points) * c._distMult;
+				if (dist < bestDist) {
+					best = c._curve;
+					bestDist = dist;
+				}
+			}
+			return best!;
 		}
 	}
 
@@ -213,6 +237,13 @@ export const bezier3FromLine = ({ p0, p1 }: LineSegment): CubicBezier => ({
 	p3: p1,
 });
 
+export const bezierFromBezier3 = ({
+	p0,
+	c1,
+	c2,
+	p3,
+}: CubicBezier): Bezier<4, 2> => matFromPts([p0, c1, c2, p3]);
+
 export function bezier3At({ p0, c1, c2, p3 }: CubicBezier, t: number): Pt {
 	const T = 1 - t;
 	return ptMad(
@@ -243,13 +274,6 @@ export const polynomialFromBezier3Values = (
 	3 * (p0 - 2 * c1 + c2),
 	p3 - p0 + 3 * (c1 - c2),
 ];
-
-function internalSkewedTValues3(gradient0: number) {
-	const c1 = gradient0 * (1 / 3);
-	const poly = polynomialFromBezier3Values(0, c1, (1 + c1) * 0.5, 1);
-	return (p: number) =>
-		polynomial4Roots(poly, p).filter((t) => t >= 0 && t <= 1)[0] ?? p;
-}
 
 export const bezier3PolynomialX = ({
 	p0,
@@ -283,6 +307,35 @@ export const bezier3TangentAt = (curve: CubicBezier, t: number): Pt =>
 
 export const bezier3NormalAt = (curve: CubicBezier, t: number): Pt =>
 	ptRot90(bezier3TangentAt(curve, t));
+
+export function bezier3RMSDistance(
+	curve: CubicBezier,
+	points: Polyline2D,
+): number {
+	if (!points.length) {
+		return 0;
+	}
+
+	const p0 = points[0]!;
+	const pN = points[points.length - 1]!;
+	const dist0 = p0.d;
+	const distM = 1 / (pN.d - dist0);
+	const diff = matSub(
+		matMul(
+			matMul(
+				matFromArrayFn(points, ({ d }) => {
+					const t = (d - dist0) * distM;
+					const tt = t * t;
+					return [1, t, tt, tt * t];
+				}),
+				bezier3M,
+			),
+			bezierFromBezier3(curve),
+		),
+		matFromPts(points),
+	);
+	return matElementNorm(diff);
+}
 
 export const bezier3Translate = (
 	{ p0, c1, c2, p3 }: CubicBezier,

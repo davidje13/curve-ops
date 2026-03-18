@@ -137,6 +137,10 @@ export function matTranspose<M extends number, N extends number>({
 	return internalMatFromFlat(vT, n, m);
 }
 
+export const matElementNorm = ({ v }: Matrix) => Math.hypot(...v);
+export const matElementNorm2 = ({ v }: Matrix) =>
+	v.reduce((s, n) => s + n * n, 0);
+
 export const matUnaryOp = <M extends number, N extends number>(
 	{ v, m, n }: Matrix<M, N>,
 	op: (v: number, i: number) => number,

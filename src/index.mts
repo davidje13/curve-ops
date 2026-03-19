@@ -281,7 +281,6 @@ export {
 	MAT4IDENT,
 	type Matrix,
 	type SquareMatrix,
-	internalMatFromFlat,
 	mat1Determinant,
 	mat1Inverse,
 	mat1LeftInverse,

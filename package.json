@@ -1,6 +1,6 @@
 {
 	"name": "curve-ops",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"private": true,
 	"description": "a collection of mathematical utilities for working with curves (primarily Bézier curves)",
 	"author": "David Evans",

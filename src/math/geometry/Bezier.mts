@@ -20,7 +20,7 @@ import {
 	type Matrix,
 	type SquareMatrix,
 } from '../Matrix.mts';
-import { polynomialRoots, type Polynomial } from '../Polynomial.mts';
+import type { Polynomial } from '../Polynomial.mts';
 import {
 	matFromVecArray,
 	vec3Cross,

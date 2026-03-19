@@ -2,7 +2,9 @@ import { matFrom } from './Matrix.mts';
 import {
 	polynomial2Roots,
 	polynomial3Roots,
+	polynomial3SignedRoots,
 	polynomial4Roots,
+	polynomial4SignedRoots,
 	polynomial5Roots,
 	polynomial7SignedRoots,
 	polynomialAdd,
@@ -242,6 +244,55 @@ describe('polynomial3Roots', () => {
 	});
 });
 
+describe('polynomial3SignedRoots', () => {
+	it('solves a+bx+cx^2=0', () => {
+		const roots = polynomial3SignedRoots(
+			polynomialScale(polynomialWithSolutions(2, 4), 2),
+			0,
+			{ min: 0, max: 10, maxError: tolerance },
+		);
+		expect(roots).hasLength(2);
+		expect(roots[0]![0]).isNear(2, { tolerance });
+		expect(roots[0]![1]).equals(-1);
+		expect(roots[1]![0]).isNear(4, { tolerance });
+		expect(roots[1]![1]).equals(1);
+	});
+
+	it('solves a+bx+cx^2=y', () => {
+		const roots = polynomial3SignedRoots(
+			polynomialShift(polynomialWithSolutions(2, 4), 1),
+			1,
+			{ min: 0, max: 10, maxError: tolerance },
+		);
+		expect(roots).hasLength(2);
+		expect(roots[0]![0]).isNear(2, { tolerance });
+		expect(roots[0]![1]).equals(-1);
+		expect(roots[1]![0]).isNear(4, { tolerance });
+		expect(roots[1]![1]).equals(1);
+	});
+
+	it('returns no solutions if the equation has no roots', () => {
+		expect(polynomial3SignedRoots([10, 1, 10])).isEmpty();
+		expect(polynomial3SignedRoots([-10, -1, -10])).isEmpty();
+	});
+
+	it('returns a linear solution if x^2 term is 0', () => {
+		const roots = polynomial3SignedRoots([-2, 4, 0], 0, {
+			min: 0,
+			max: 10,
+			maxError: tolerance,
+		});
+		expect(roots).hasLength(1);
+		expect(roots[0]![0]).isNear(0.5, { tolerance });
+		expect(roots[0]![1]).equals(1);
+	});
+
+	it('returns no solutions if x^1 and x^2 terms are 0', () => {
+		expect(polynomial3SignedRoots([10, 0, 0])).isEmpty();
+		expect(polynomial3SignedRoots([0, 0, 0])).isEmpty();
+	});
+});
+
 describe('polynomial4Roots', () => {
 	it('solves a+bx+cx^2+dx^3=0', () => {
 		const roots = polynomial4Roots(
@@ -316,6 +367,89 @@ describe('polynomial4Roots', () => {
 	it('returns no solutions if x^1, x^2, and x^3 terms are 0', () => {
 		expect(polynomial4Roots([10, 0, 0, 0])).isEmpty();
 		expect(polynomial4Roots([0, 0, 0, 0])).isEmpty();
+	});
+});
+
+describe('polynomial4SignedRoots', () => {
+	it('solves a+bx+cx^2+dx^3=0', () => {
+		const roots = polynomial4SignedRoots(
+			polynomialScale(polynomialWithSolutions(1, 2, 3), 2),
+			0,
+			{ min: 0, max: 10, maxError: tolerance },
+		);
+		expect(roots).hasLength(3);
+		expect(roots[0]![0]).isNear(1, { tolerance });
+		expect(roots[0]![1]).equals(1);
+		expect(roots[1]![0]).isNear(2, { tolerance });
+		expect(roots[1]![1]).equals(-1);
+		expect(roots[2]![0]).isNear(3, { tolerance });
+		expect(roots[2]![1]).equals(1);
+	});
+
+	it('solves a+bx+cx^2+dx^3=y', () => {
+		const roots = polynomial4SignedRoots(
+			polynomialShift(polynomialWithSolutions(1, 2, 3), 1),
+			1,
+			{ min: 0, max: 10, maxError: tolerance },
+		);
+		expect(roots).hasLength(3);
+		expect(roots[0]![0]).isNear(1, { tolerance });
+		expect(roots[0]![1]).equals(1);
+		expect(roots[1]![0]).isNear(2, { tolerance });
+		expect(roots[1]![1]).equals(-1);
+		expect(roots[2]![0]).isNear(3, { tolerance });
+		expect(roots[2]![1]).equals(1);
+	});
+
+	it('returns one solution if the equation has a turning point below y=0', () => {
+		const roots = polynomial4SignedRoots(
+			polynomialShift(polynomialWithSolutions(1, 1, 2), 2),
+			0,
+			{ min: -1, max: 10, maxError: tolerance },
+		);
+		expect(roots).hasLength(1);
+		expect(roots[0]![0]).isNear(0, { tolerance });
+		expect(roots[0]![1]).equals(1);
+	});
+
+	it('returns one solution if the equation has a turning point above y=0', () => {
+		const roots = polynomial4SignedRoots(
+			polynomialShift(polynomialWithSolutions(0, 0, 1), -4),
+			0,
+			{ min: -1, max: 10, maxError: tolerance },
+		);
+		expect(roots).hasLength(1);
+		expect(roots[0]![0]).isNear(2, { tolerance });
+		expect(roots[0]![1]).equals(1);
+	});
+
+	it('returns a quadratic solution if x^3 term is 0', () => {
+		const roots = polynomial4SignedRoots([16, -12, 2, 0], 0, {
+			min: 0,
+			max: 10,
+			maxError: tolerance,
+		});
+		expect(roots).hasLength(2);
+		expect(roots[0]![0]).isNear(2, { tolerance });
+		expect(roots[0]![1]).equals(-1);
+		expect(roots[1]![0]).isNear(4, { tolerance });
+		expect(roots[1]![1]).equals(1);
+	});
+
+	it('returns a linear solution if x^2 and x^3 terms are 0', () => {
+		const roots = polynomial4SignedRoots([-2, 4, 0, 0], 0, {
+			min: 0,
+			max: 10,
+			maxError: tolerance,
+		});
+		expect(roots).hasLength(1);
+		expect(roots[0]![0]).isNear(0.5, { tolerance });
+		expect(roots[0]![1]).equals(1);
+	});
+
+	it('returns no solutions if x^1, x^2, and x^3 terms are 0', () => {
+		expect(polynomial4SignedRoots([10, 0, 0, 0])).isEmpty();
+		expect(polynomial4SignedRoots([0, 0, 0, 0])).isEmpty();
 	});
 });
 

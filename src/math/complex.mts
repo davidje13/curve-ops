@@ -1,4 +1,9 @@
+import { internalMatFromFlat } from './Matrix.mts';
+
 export type ComplexNumber = readonly [number, number];
+
+export const complexCompanionMat = ([a, ai]: ComplexNumber) =>
+	internalMatFromFlat([a, -ai, ai, a], 2, 2);
 
 export const addZ = (
 	[a, ai]: ComplexNumber,
@@ -21,6 +26,8 @@ export const subRZ = (a: number, [b, bi]: ComplexNumber): ComplexNumber => [
 ];
 
 export const negZ = ([a, ai]: ComplexNumber): ComplexNumber => [-a, -ai];
+
+export const conjugateZ = ([a, ai]: ComplexNumber): ComplexNumber => [a, -ai];
 
 export const mulZ = (
 	[a, ai]: ComplexNumber,

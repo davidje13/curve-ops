@@ -1,20 +1,35 @@
 import {
 	bezier2At,
 	bezier3At,
+	bezier3Bounds,
 	bezier3SVG,
 	bezierAt,
 	bezierFromVecs,
 	CurveDrawer,
 	fresnelCIntegral,
 	fresnelSIntegral,
+	intersectBezier3CircleFn,
+	isOverlapAABox,
+	isOverlapAABoxCircleR2,
 	polyline2DSVG,
+	ptDist2,
 	ptFromVec,
+	ptSVG,
+	rectBounds,
+	rectFromLine,
+	subtractBezier3Circle,
+	subtractBezier3Rect,
 	vecFrom,
+	type AxisAlignedBox,
+	type Circle,
+	type CircleIntersectionFn,
+	type CubicBezier,
 	type Pt,
 } from '../../index.mts';
 import {
 	makeInteractive,
 	makeNumericInput,
+	makeRadio,
 	makeSelect,
 	mk,
 	mkSVG,
@@ -205,26 +220,156 @@ function ptFn(fn: (t: number) => Pt, n = 100000): Pt[] {
 	return r;
 }
 
+interface BezierSegment {
+	_curve: CubicBezier;
+	_element: SVGElement;
+	_circFn: CircleIntersectionFn | null;
+	_bounds: AxisAlignedBox;
+	_next: BezierSegment;
+}
+interface BezierChain {
+	_next: BezierSegment;
+	_last: { _next: BezierSegment };
+}
+const ENDCAP = {} as BezierSegment;
+function emptyBezierChain() {
+	const chain: BezierChain = { _next: ENDCAP, _last: ENDCAP };
+	chain._last = chain;
+	return chain;
+}
+
 document.body.append(
-	makeInteractive(({ addSVGElement, addDragHandler }) => {
+	makeInteractive(({ addElement, addSVGElement, addDragHandler }) => {
+		const tool = makeRadio(
+			'tool',
+			[{ name: 'Pen' }, { name: 'Eraser' }],
+			' ',
+			0,
+		);
+		addElement(tool.input);
+
+		const paths = emptyBezierChain();
+		let active: BezierChain | undefined;
 		const hold = addSVGElement(mkSVG('g'));
-		const pathLive = mkSVG('path', { class: 'live' });
+		const pathLive = addSVGElement(mkSVG('path', { class: 'live' }));
+
+		const eraserRad = 0.03;
+		const eraser = (pt: Pt) => {
+			let prev = pt;
+			function doErase(from: Pt, to: Pt) {
+				const endCap: Circle = { c: to, r: eraserRad };
+				const line =
+					ptDist2(from, to) > eraserRad * eraserRad * 0.1 * 0.1
+						? rectFromLine({ p0: from, p1: to }, eraserRad * 2)
+						: null;
+				const lineBounds = line ? rectBounds(line) : null;
+				const endCapRR = endCap.r * endCap.r;
+
+				let prev: { _next: BezierSegment } = paths;
+				while (true) {
+					const seg = prev._next;
+					if (seg === ENDCAP) {
+						break;
+					}
+					let parts = [seg._curve];
+					if (isOverlapAABoxCircleR2(seg._bounds, endCap.c, endCapRR)) {
+						seg._circFn ??= intersectBezier3CircleFn(seg._curve);
+						parts = subtractBezier3Circle(seg._curve, endCap, seg._circFn);
+					}
+					if (lineBounds && isOverlapAABox(seg._bounds, lineBounds)) {
+						parts = parts.flatMap((c) => subtractBezier3Rect(c, line!));
+					}
+					if (parts.length !== 1) {
+						// removed or split
+						const split = parts.map(
+							(part): BezierSegment => ({
+								_curve: part,
+								_element: mkSVG('path', { class: 'done', d: bezier3SVG(part) }),
+								_circFn: null,
+								_bounds: bezier3Bounds(part),
+								_next: ENDCAP,
+							}),
+						);
+						let next = seg._next;
+						for (let i = split.length; i-- > 0; ) {
+							split[i]!._next = next;
+							next = split[i]!;
+						}
+						prev._next = next;
+						const last = split[split.length - 1] ?? prev;
+						if (paths._last === seg) {
+							paths._last = last;
+						}
+						seg._element.replaceWith(...split.map((v) => v._element));
+						prev = last;
+					} else if (parts[0] !== seg._curve) {
+						// replaced
+						const curve = parts[0]!;
+						seg._curve = curve;
+						seg._circFn = null;
+						seg._bounds = bezier3Bounds(curve);
+						seg._element.setAttribute('d', bezier3SVG(curve));
+						prev = prev._next;
+					} else {
+						prev = prev._next;
+					}
+				}
+			}
+			doErase(pt, pt);
+			return {
+				move: (pt: Pt, end: boolean) => {
+					if (ptDist2(prev, pt) > 0.005 * 0.005 || end) {
+						doErase(prev, pt);
+						prev = pt;
+					}
+				},
+			};
+		};
 
 		const drawer = new CurveDrawer(
-			() => hold.replaceChildren(pathLive),
-			(seg, n) =>
-				hold.append(mkSVG('path', { class: `done n${n}`, d: bezier3SVG(seg) })),
+			() => {
+				active = emptyBezierChain();
+			},
+			(seg, n) => {
+				if (!active) {
+					return;
+				}
+				const node: BezierSegment = {
+					_curve: seg,
+					_element: mkSVG('path', { class: `done n${n}`, d: bezier3SVG(seg) }),
+					_circFn: null,
+					_bounds: bezier3Bounds(seg),
+					_next: ENDCAP,
+				};
+				active._last._next = node;
+				active._last = node;
+				hold.append(node._element);
+			},
 			(live) => pathLive.setAttribute('d', bezier3SVG(live)),
 			() => {
 				pathLive.setAttribute('d', '');
+				if (active && active._next !== ENDCAP) {
+					paths._last._next = active._next;
+					paths._last = active._last;
+					active = undefined;
+				}
 			},
-			() => hold.replaceChildren(),
+			() => {
+				if (active) {
+					for (let seg = active._next; seg !== ENDCAP; seg = seg._next) {
+						seg._element.remove();
+					}
+				}
+				active = undefined;
+			},
 			0.005,
 			50,
 			0.0005,
 			0.0008,
 		);
-		addDragHandler(drawer.begin, drawer.draw, drawer.cancel);
+		addDragHandler((pt) =>
+			tool.current()?.name === 'Pen' ? drawer.begin(pt) : eraser(pt),
+		);
 	}),
 
 	makeInteractive(
@@ -258,6 +403,10 @@ document.body.append(
 					(seg, n) =>
 						hold.append(
 							mkSVG('path', { class: `done n${n}`, d: bezier3SVG(seg) }),
+							mkSVG('path', {
+								class: 'join',
+								d: 'M' + ptSVG(seg.p3) + 'h0.001',
+							}),
 						),
 					() => {},
 					() => {},
@@ -268,11 +417,11 @@ document.body.append(
 					maxError.current(),
 				);
 				guide.setAttribute('d', polyline2DSVG(points));
-				drawer.begin(points[0]!);
+				const path = drawer.begin(points[0]!);
 				for (let i = 1; i < points.length - 1; ++i) {
-					drawer.draw(points[i]!);
+					path.move(points[i]!);
 				}
-				drawer.draw(points[points.length - 1]!, true);
+				path.move(points[points.length - 1]!, true);
 			});
 		},
 	),

@@ -1,5 +1,5 @@
 import { PT0, type Pt } from '../index.mts';
-import { DragHandler } from './DragHandler.mts';
+import { DragHandler, type MovementHandler } from './DragHandler.mts';
 
 export function grabbable(
 	o: HTMLElement,
@@ -17,7 +17,11 @@ export function grabbable(
 		draw();
 		update();
 	};
-	const handler = new DragHandler(o.parentElement!, 1, 1, move, move, () => {});
+	const handler = new DragHandler(o.parentElement!, 1, 1, (pt) => {
+		const original = { ...r };
+		move(pt);
+		return { move, cancel: () => move(original) };
+	});
 	o.addEventListener('pointerdown', handler.begin);
 	draw();
 	return r;
@@ -96,7 +100,7 @@ export function makeCheckbox(
 export function makeSelect<T extends { name: string }>(
 	options: T[],
 	initialIndex: number,
-	onChange: (v: T) => void,
+	onChange?: (v: T) => void,
 ) {
 	const select = mk(
 		'select',
@@ -109,7 +113,7 @@ export function makeSelect<T extends { name: string }>(
 		if (!opt) {
 			return;
 		}
-		onChange(opt);
+		onChange?.(opt);
 	});
 
 	return {
@@ -117,6 +121,52 @@ export function makeSelect<T extends { name: string }>(
 		current: () => options[select.selectedIndex]!,
 		set: (index: number) => {
 			select.selectedIndex = index;
+		},
+	};
+}
+
+export function makeRadio<T extends { name: string }>(
+	name: string,
+	options: T[],
+	joiner: string | HTMLElement,
+	initialIndex: number,
+	onChange?: (v: T) => void,
+) {
+	const container = mk('div');
+	const parts = options.map((opt, i) => {
+		const input = mk('input', {
+			type: 'radio',
+			name,
+			checked: i === initialIndex ? 'checked' : undefined,
+		}) as HTMLInputElement;
+		input.addEventListener('change', update);
+		const label = mk('label', {}, [input, ' ', opt.name]);
+		if (i && joiner) {
+			container.append(joiner);
+		}
+		container.append(label);
+		return { input, label, value: opt };
+	});
+
+	let value = options[initialIndex];
+	function update() {
+		for (const part of parts) {
+			if (part.input.checked) {
+				if (value !== part.value) {
+					value = part.value;
+					onChange?.(value);
+				}
+				break;
+			}
+		}
+	}
+
+	return {
+		input: container,
+		current: () => value,
+		set: (index: number) => {
+			value = options[index];
+			parts[index]!.input.checked = true;
 		},
 	};
 }
@@ -131,11 +181,7 @@ interface InteractiveScope {
 		d?: string | null | (() => string | null),
 	): SVGPathElement;
 	addHandle(className: string, initial: Pt): Pt;
-	addDragHandler(
-		begin: (pt: Pt) => void,
-		move: (pt: Pt, end: boolean) => void,
-		cancel: () => void,
-	): void;
+	addDragHandler(begin: (pt: Pt) => MovementHandler | null): void;
 	addUpdateFn(fn: () => void): void;
 	computed<T>(fn: () => T): { current: T };
 	update(): void;
@@ -204,9 +250,9 @@ export function makeInteractive(fn: (scope: InteractiveScope) => void) {
 			playground.append(handle);
 			return grabbable(handle, update, initial);
 		},
-		addDragHandler(begin, move, cancel) {
-			const handler = new DragHandler(hold, 1, 1, begin, move, cancel);
-			hold.addEventListener('pointerdown', handler.begin);
+		addDragHandler(begin) {
+			const handler = new DragHandler(playground, 1, 1, begin);
+			playground.addEventListener('pointerdown', handler.begin);
 		},
 		addUpdateFn(fn) {
 			updaters.push(fn);

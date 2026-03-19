@@ -1,15 +1,19 @@
 import type { Pt } from '../index.mts';
 
+export interface MovementHandler {
+	move: (pt: Pt, end: boolean) => void;
+	cancel?: () => void;
+}
+
 export class DragHandler {
 	declare private _state: { id: number; target: HTMLElement } | undefined;
+	declare private _handler: MovementHandler | undefined;
 
 	constructor(
 		private readonly pointRegion: HTMLElement | SVGElement,
 		private readonly w: number,
 		private readonly h: number,
-		private readonly onBegin: (pt: Pt) => void,
-		private readonly onMove: (pt: Pt, end: boolean) => void,
-		private readonly onCancel: () => void,
+		private readonly onBegin: (pt: Pt) => MovementHandler | null,
 	) {}
 
 	detach() {
@@ -52,26 +56,29 @@ export class DragHandler {
 		// work around Safari not locking cursor when using setPointerCapture
 		o.ownerDocument.documentElement.style.cursor = o.style.cursor;
 
-		this.onBegin(this.toPt(e));
+		this._handler = this.onBegin(this.toPt(e)) ?? undefined;
+		if (!this._handler) {
+			this.detach();
+		}
 	};
 
 	move = (e: PointerEvent) => {
 		if (e.pointerId === this._state?.id) {
-			this.onMove(this.toPt(e), false);
+			this._handler?.move(this.toPt(e), false);
 		}
 	};
 
 	stop = (e: PointerEvent) => {
 		if (e.pointerId === this._state?.id) {
 			this.detach();
-			this.onMove(this.toPt(e), true);
+			this._handler?.move(this.toPt(e), true);
 		}
 	};
 
 	cancel = (e: PointerEvent) => {
 		if (e.pointerId === this._state?.id) {
 			this.detach();
-			this.onCancel();
+			this._handler?.cancel?.();
 		}
 	};
 }

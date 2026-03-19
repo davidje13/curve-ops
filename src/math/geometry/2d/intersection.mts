@@ -1,13 +1,17 @@
-import { polynomial7SignedRoots } from '../../Polynomial.mts';
+import type { Sign } from '../../../types/numeric.mts';
+import {
+	polynomial4SignedRoots,
+	polynomial7SignedRoots,
+} from '../../Polynomial.mts';
 import type { AxisAlignedBox } from './AxisAlignedBox.mts';
-import type { Circle } from './Circle.mts';
+import { circleContains, type Circle } from './Circle.mts';
 import {
 	bezier3Bounds,
-	bezier3Derivative,
-	bezier3TsAtXEq,
+	bezier3PolynomialX,
+	bezier3PolynomialY,
+	bezier3Split,
 	bezier3TsAtYEq,
 	bezier3XAt,
-	bezier3YAt,
 	type CubicBezier,
 } from './CubicBezier.mts';
 import {
@@ -15,14 +19,16 @@ import {
 	type LineSegment,
 } from './LineSegment.mts';
 import { bezier3Normalise } from './NormalisedCubicBezier.mts';
-import type { Rectangle } from './Rectangle.mts';
+import { rectContains, type Rectangle } from './Rectangle.mts';
 import { ptAdd, ptDot, ptLen2, type Pt } from './Pt.mts';
-import { bezier2XAt, bezier2YAt } from './QuadraticBezier.mts';
+
+export const isOverlapAABox = (a: AxisAlignedBox, b: AxisAlignedBox) =>
+	a.l.x < b.h.x && b.l.x < a.h.x && a.l.y < b.h.y && b.l.y < a.h.y;
 
 export const isOverlapAABoxCircle = (aaBox: AxisAlignedBox, { c, r }: Circle) =>
 	isOverlapAABoxCircleR2(aaBox, c, r * r);
 
-function isOverlapAABoxCircleR2(
+export function isOverlapAABoxCircleR2(
 	{ l, h }: AxisAlignedBox,
 	c: Pt,
 	r2: number,
@@ -61,8 +67,10 @@ export function intersectBezier3Line(
 
 export function intersectBezier3Rect(
 	{ p0, c1, c2, p3 }: CubicBezier,
-	{ c, d, aspect }: Rectangle,
+	rect: Rectangle,
+	maxError?: number | undefined,
 ): { t1: number; d1: Sign }[] {
+	const { c, d, aspect } = rect;
 	const norm = internalLineScaledNormalisation({ p0: c, p1: ptAdd(c, d) });
 	if (!norm) {
 		return [];
@@ -73,33 +81,56 @@ export function intersectBezier3Rect(
 		c2: norm.fn(c2),
 		p3: norm.fn(p3),
 	};
-	const grad = bezier3Derivative(curve);
 	const ry = 0.5 * aspect;
 
+	const range = { min: 0, max: 1, maxError };
+	const xFn = bezier3PolynomialX(curve);
+	const yFn = bezier3PolynomialY(curve);
+	const crossings: { t1: number; d1: 1 | -1; y: boolean }[] = [];
+	for (const [t1, d1] of polynomial4SignedRoots(yFn, -ry, range)) {
+		crossings.push({ t1, d1: -d1 as 1 | -1, y: true });
+	}
+	for (const [t1, d1] of polynomial4SignedRoots(yFn, ry, range)) {
+		crossings.push({ t1, d1, y: true });
+	}
+	for (const [t1, d1] of polynomial4SignedRoots(xFn, -0.5, range)) {
+		crossings.push({ t1, d1: -d1 as 1 | -1, y: false });
+	}
+	for (const [t1, d1] of polynomial4SignedRoots(xFn, 0.5, range)) {
+		crossings.push({ t1, d1, y: false });
+	}
+	if (!crossings.length) {
+		return [];
+	}
 	const r: { t1: number; d1: Sign }[] = [];
-	for (const t1 of bezier3TsAtYEq(curve, -ry)) {
-		const x = bezier3XAt(curve, t1);
-		if (t1 >= 0 && t1 <= 1 && x >= -0.5 && x <= 0.5) {
-			r.push({ t1, d1: sign(-bezier2YAt(grad, t1)) });
+	let prevT = -1;
+	let inX = curve.p0.x > -0.5 && curve.p0.x < 0.5;
+	let inY = curve.p0.y > -ry && curve.p0.y < ry;
+	for (const { t1, d1, y } of crossings.sort((a, b) => a.t1 - b.t1)) {
+		const newIn = d1 < 0;
+		if (y) {
+			if (newIn === inY) {
+				continue;
+			}
+			inY = newIn;
+			if (!inX) {
+				continue;
+			}
+		} else {
+			if (newIn === inX) {
+				continue;
+			}
+			inX = newIn;
+			if (!inY) {
+				continue;
+			}
 		}
-	}
-	for (const t1 of bezier3TsAtYEq(curve, ry)) {
-		const x = bezier3XAt(curve, t1);
-		if (t1 >= 0 && t1 <= 1 && x >= -0.5 && x <= 0.5) {
-			r.push({ t1, d1: sign(bezier2YAt(grad, t1)) });
+		if (t1 !== prevT) {
+			r.push({ t1, d1 });
+		} else {
+			r.pop();
 		}
-	}
-	for (const t1 of bezier3TsAtXEq(curve, -0.5)) {
-		const y = bezier3YAt(curve, t1);
-		if (t1 >= 0 && t1 <= 1 && y >= -ry && y <= ry) {
-			r.push({ t1, d1: sign(-bezier2XAt(grad, t1)) });
-		}
-	}
-	for (const t1 of bezier3TsAtXEq(curve, 0.5)) {
-		const y = bezier3YAt(curve, t1);
-		if (t1 >= 0 && t1 <= 1 && y >= -ry && y <= ry) {
-			r.push({ t1, d1: sign(bezier2XAt(grad, t1)) });
-		}
+		prevT = t1;
 	}
 	return r;
 }
@@ -110,10 +141,18 @@ export const intersectBezier3Circle = (
 	maxError?: number | undefined,
 ) => intersectBezier3CircleFn(curve)(circle.c, circle.r * circle.r, maxError);
 
-export function intersectBezier3CircleFn(curve: CubicBezier) {
+export type CircleIntersectionFn = (
+	center: Pt,
+	rad2: number,
+	maxError?: number | undefined,
+) => { t1: number; d1: Sign }[];
+
+export function intersectBezier3CircleFn(
+	curve: CubicBezier,
+): CircleIntersectionFn {
 	const norm = bezier3Normalise(curve);
 	const normed = intersectNBezier3CircleFn(norm.curve);
-	return (center: Pt, rad2: number, maxError?: number | undefined) =>
+	return (center, rad2, maxError) =>
 		normed(norm.fn(center), rad2 / norm.scale2, maxError);
 }
 
@@ -125,11 +164,7 @@ export const intersectNBezier3Circle = (
 
 export function intersectNBezier3CircleFn(
 	curve: CubicBezier,
-): (
-	center: Pt,
-	rad2: number,
-	maxError?: number | undefined,
-) => { t1: number; d1: Sign }[] {
+): CircleIntersectionFn {
 	const bounds = bezier3Bounds(curve);
 
 	// distance equation:
@@ -174,6 +209,39 @@ export function intersectNBezier3CircleFn(
 	};
 }
 
-type Sign = -1 | 0 | 1;
+export function subtractBezier3Rect(curve: CubicBezier, rect: Rectangle) {
+	const intersections = intersectBezier3Rect(curve, rect);
+	if (intersections.length > 0) {
+		const phase = intersections[0]!.d1 > 0 ? 1 : 0;
+		return bezier3Split(
+			curve,
+			intersections.map((i) => i.t1),
+			0,
+		).filter((_, i) => (i & 1) === phase);
+	} else if (rectContains(rect, curve.p0)) {
+		return [];
+	} else {
+		return [curve];
+	}
+}
 
-const sign = (x: number) => Math.sign(x) as Sign;
+export function subtractBezier3Circle(
+	curve: CubicBezier,
+	circle: Circle,
+	fn: CircleIntersectionFn,
+) {
+	const rr = circle.r * circle.r;
+	const intersections = fn(circle.c, rr);
+	if (intersections.length > 0) {
+		const phase = intersections[0]!.d1 > 0 ? 1 : 0;
+		return bezier3Split(
+			curve,
+			intersections.map((i) => i.t1),
+			0,
+		).filter((_, i) => (i & 1) === phase);
+	} else if (circleContains(circle, curve.p0)) {
+		return [];
+	} else {
+		return [curve];
+	}
+}

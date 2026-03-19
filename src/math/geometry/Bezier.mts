@@ -225,21 +225,6 @@ export const polynomialFromBezierValues = <P extends number[]>(
 		SizeOf<P>
 	>;
 
-export function internalSkewedTValues(gradient0: number, m: number) {
-	if (m < 3 || m > 5 || Math.abs(gradient0 - 1) < Number.EPSILON) {
-		return (p: number) => p;
-	}
-	const n = m - 1;
-	const pts = [0];
-	const c1 = gradient0 / n;
-	for (let i = 0; i < n; ++i) {
-		pts.push(c1 + (1 - c1) * (i / n));
-	}
-	const poly = polynomialFromBezierValues(...pts);
-	return (p: number) =>
-		polynomialRoots(poly, p, { min: 0, max: 0, maxError: 1e-2 })[0] ?? p;
-}
-
 export const bezierOrder = (curve: Bezier<number, number>) => curve.m - 1;
 
 export function bezierElevateOrder<Points extends number, Dim extends number>({

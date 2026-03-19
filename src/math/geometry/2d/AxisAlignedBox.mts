@@ -21,6 +21,9 @@ export const aaBoxMidpoint = ({ l, h }: AxisAlignedBox) => ptMid(l, h);
 export const aaBoxArea = ({ l, h }: AxisAlignedBox) =>
 	(h.x - l.x) * (h.y - l.y);
 
+export const aaBoxContains = ({ l, h }: AxisAlignedBox, { x, y }: Pt) =>
+	x >= l.x && x <= h.x && y >= l.y && y <= h.y;
+
 export const aaBoxSVG = (
 	{ l, h }: AxisAlignedBox,
 	precision?: number | undefined,

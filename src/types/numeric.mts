@@ -18,6 +18,8 @@ type NATURAL = [
 	...number[],
 ];
 
+export type Sign = -1 | 0 | 1;
+
 export type Increment<N extends number> = NATURAL[N];
 export type Decrement<N extends number> = [never, 0, ...NATURAL][N];
 

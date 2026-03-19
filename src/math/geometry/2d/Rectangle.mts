@@ -4,7 +4,16 @@ import {
 	lineMidpoint,
 	type LineSegment,
 } from './LineSegment.mts';
-import { ptAdd, ptLen, ptLen2, ptSub, ptSVG, type Pt } from './Pt.mts';
+import {
+	ptAdd,
+	ptCross,
+	ptDot,
+	ptLen,
+	ptLen2,
+	ptSub,
+	ptSVG,
+	type Pt,
+} from './Pt.mts';
 
 export interface Rectangle {
 	readonly c: Pt; // center
@@ -29,11 +38,17 @@ export function rectBounds({ c, d, aspect }: Rectangle): AxisAlignedBox {
 	const dx = Math.abs(d.x);
 	const dy = Math.abs(d.y);
 	const hw = (dx + dy * aspect) * 0.5;
-	const hh = (dy + dy * aspect) * 0.5;
+	const hh = (dy + dx * aspect) * 0.5;
 	return {
 		l: { x: c.x - hw, y: c.y - hh },
 		h: { x: c.x + hw, y: c.y + hh },
 	};
+}
+
+export function rectContains({ c, d, aspect }: Rectangle, pt: Pt) {
+	const l = ptSub(pt, c);
+	const dd = ptLen2(d) * 0.5;
+	return Math.abs(ptDot(l, d)) <= dd && Math.abs(ptCross(l, d)) <= dd * aspect;
 }
 
 export function rectSVG(

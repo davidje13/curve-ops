@@ -1,6 +1,7 @@
 export {
 	type AxisAlignedBox,
 	aaBoxArea,
+	aaBoxContains,
 	aaBoxFromXY,
 	aaBoxMidpoint,
 	aaBoxSVG,
@@ -13,6 +14,7 @@ export {
 	circleArea,
 	circleBounds,
 	circleCircumference,
+	circleContains,
 	circleSVG,
 } from './math/geometry/2d/Circle.mts';
 
@@ -51,13 +53,18 @@ export {
 } from './math/geometry/2d/CubicBezier.mts';
 
 export {
+	type CircleIntersectionFn,
 	intersectBezier3Circle,
 	intersectBezier3CircleFn,
 	intersectBezier3Line,
 	intersectBezier3Rect,
 	intersectNBezier3Circle,
 	intersectNBezier3CircleFn,
+	isOverlapAABox,
 	isOverlapAABoxCircle,
+	isOverlapAABoxCircleR2,
+	subtractBezier3Circle,
+	subtractBezier3Rect,
 } from './math/geometry/2d/intersection.mts';
 
 export {
@@ -100,6 +107,7 @@ export {
 
 export {
 	type Polygon,
+	polygonContains,
 	polygonSignedArea,
 } from './math/geometry/2d/Polygon.mts';
 
@@ -176,6 +184,7 @@ export {
 	type Rectangle,
 	rectArea,
 	rectBounds,
+	rectContains,
 	rectFromAABox,
 	rectFromLine,
 	rectSVG,
@@ -227,6 +236,8 @@ export {
 	type ComplexNumber,
 	addZ,
 	addZR,
+	complexCompanionMat,
+	conjugateZ,
 	divRZ,
 	divZ,
 	expZ,
@@ -330,8 +341,11 @@ export {
 	type Polynomial,
 	polynomial2Roots,
 	polynomial3Roots,
+	polynomial3SignedRoots,
 	polynomial4Roots,
+	polynomial4SignedRoots,
 	polynomial5Roots,
+	polynomial5SignedRoots,
 	polynomial7SignedRoots,
 	polynomialAdd,
 	polynomialAt,
@@ -415,6 +429,7 @@ export type {
 	Increment,
 	Max,
 	Multiply,
+	Sign,
 } from './types/numeric.mts';
 
 export {

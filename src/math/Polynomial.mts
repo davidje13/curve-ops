@@ -120,6 +120,8 @@ export function polynomialRoots(
 	}
 }
 
+const ZERO_THRESHOLD = 1e-12;
+
 export const polynomial2Roots = (
 	[f0, f1]: Polynomial<2>,
 	y = 0,
@@ -129,7 +131,7 @@ export function polynomial3Roots(
 	[f0, f1, f2]: Polynomial<3>,
 	y = 0,
 ): [number, number] | [number] | [] {
-	if (!f2) {
+	if (Math.abs(f2) <= Math.max(f0, -f0, f1, -f1) * ZERO_THRESHOLD) {
 		return polynomial2Roots([f0, f1], y);
 	}
 	const disc = f1 * f1 - 4 * f2 * (f0 - y);
@@ -144,11 +146,32 @@ export function polynomial3Roots(
 	return [];
 }
 
+export function polynomial3SignedRoots(
+	f: Polynomial<3>,
+	y = 0,
+	{ min = 0, max = 1, maxError = 1e-4 } = {},
+) {
+	// this is slower than polynomial3Roots but has better stability
+
+	// solve derivative = 0 analytically
+	const dividers = polynomial2Roots(polynomialDerivative(f))
+		.filter((x) => x > min && x < max)
+		.sort();
+	dividers.push(max);
+
+	return findSingleSolutionPerRange(
+		min,
+		dividers,
+		(v) => polynomialAt(f, v) - y,
+		maxError,
+	);
+}
+
 export function polynomial4Roots(
 	[f0, f1, f2, f3]: Polynomial<4>,
 	y = 0,
 ): [number, number, number] | [number, number] | [number] | [] {
-	if (!f3) {
+	if (Math.abs(f3) <= Math.max(f0, -f0, f1, -f1, f2, -f2) * ZERO_THRESHOLD) {
 		return polynomial3Roots([f0, f1, f2], y);
 	}
 
@@ -185,6 +208,27 @@ export function polynomial4Roots(
 	return [Math.cbrt(root - q) - Math.cbrt(root + q) - s];
 }
 
+export function polynomial4SignedRoots(
+	f: Polynomial<4>,
+	y = 0,
+	{ min = 0, max = 1, maxError = 1e-4 } = {},
+) {
+	// this is slower than polynomial3Roots but has better stability
+
+	// solve derivative = 0 analytically
+	const dividers = polynomial3Roots(polynomialDerivative(f))
+		.filter((x) => x > min && x < max)
+		.sort();
+	dividers.push(max);
+
+	return findSingleSolutionPerRange(
+		min,
+		dividers,
+		(v) => polynomialAt(f, v) - y,
+		maxError,
+	);
+}
+
 export function polynomial5Roots(
 	[f0, f1, f2, f3, f4]: Polynomial<5>,
 	y = 0,
@@ -194,7 +238,10 @@ export function polynomial5Roots(
 	| [number, number]
 	| [number]
 	| [] {
-	if (!f4) {
+	if (
+		Math.abs(f4) <=
+		Math.max(f0, -f0, f1, -f1, f2, -f2, f3, -f3) * ZERO_THRESHOLD
+	) {
 		return polynomial4Roots([f0, f1, f2, f3], y);
 	}
 
@@ -253,6 +300,27 @@ export function polynomial5Roots(
 		}
 	}
 	return roots as any;
+}
+
+export function polynomial5SignedRoots(
+	f: Polynomial<5>,
+	y = 0,
+	{ min = 0, max = 1, maxError = 1e-4 } = {},
+) {
+	// this is slower than polynomial3Roots but has better stability
+
+	// solve derivative = 0 analytically
+	const dividers = polynomial4Roots(polynomialDerivative(f))
+		.filter((x) => x > min && x < max)
+		.sort();
+	dividers.push(max);
+
+	return findSingleSolutionPerRange(
+		min,
+		dividers,
+		(v) => polynomialAt(f, v) - y,
+		maxError,
+	);
 }
 
 export function polynomial7SignedRoots(
@@ -334,6 +402,42 @@ export function polynomial7SignedRoots(
 		lv = hv;
 	}
 
+	return solutions;
+}
+
+function findSingleSolutionPerRange(
+	min: number,
+	dividers: number[],
+	fn: (v: number) => number,
+	maxError: number,
+) {
+	const solutions: [number, -1 | 1][] = [];
+
+	function recur(l: number, h: number, lv: number, hv: number) {
+		if (h - l > maxError) {
+			const mid = (l + h) * 0.5;
+			const midv = fn(mid);
+			if (lv < 0 !== midv < 0) {
+				recur(l, mid, lv, midv);
+			}
+			if (midv < 0 !== hv < 0) {
+				recur(mid, h, midv, hv);
+			}
+		} else if (lv < 0 !== hv < 0) {
+			solutions.push([l + ((h - l) * lv) / (lv - hv), lv < 0 ? 1 : -1]);
+		}
+	}
+
+	let l = min;
+	let lv = fn(min);
+	for (const h of dividers) {
+		const hv = fn(h);
+		if (lv < 0 !== hv < 0) {
+			recur(l, h, lv, hv);
+		}
+		l = h;
+		lv = hv;
+	}
 	return solutions;
 }
 

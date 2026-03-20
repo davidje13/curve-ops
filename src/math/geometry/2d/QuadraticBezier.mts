@@ -90,7 +90,7 @@ export function bezier2FromPolylinePtsLeastSquares(
 
 export function bezier2FromPolylinePtsLeastSquaresFixEnds(
 	points: Polyline2D,
-	prevControl: Pt | null = null,
+	prevControl: Pt | null | undefined,
 ): QuadraticBezier | null {
 	if (!points.length) {
 		return null;

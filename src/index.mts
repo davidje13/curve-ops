@@ -420,7 +420,9 @@ export {
 	vecSub,
 } from './math/Vector.mts';
 
-export { CurveDrawer } from './tools/CurveDrawer.mts';
+export { movementThrottle } from './tools/movement.mts';
+export { penTool } from './tools/penTool.mts';
+export { SingleLinkedList } from './tools/SingleLinkedList.mts';
 
 export type {
 	Decrement,

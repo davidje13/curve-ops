@@ -1,10 +1,10 @@
-import { CurveDrawer } from 'curve-ops';
+import { penTool } from 'curve-ops';
 
 // This is a minimal realistic user of curve-ops, so
 // dead code analysis / tree shaking should be able to
 // generate a very small bundle.
 
-const draw = new CurveDrawer(
+const draw = penTool(
 	console.log,
 	console.log,
 	console.log,

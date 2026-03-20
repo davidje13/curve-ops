@@ -94,7 +94,7 @@ export function bezier3FromPolylinePtsLeastSquares(
 
 export function bezier3FromPolylinePtsLeastSquaresFixEnds(
 	points: Polyline2D,
-	prevControl: Pt | null = null,
+	prevControl: Pt | null | undefined,
 ): CubicBezier | null {
 	if (!points.length) {
 		return null;

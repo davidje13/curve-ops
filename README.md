@@ -315,6 +315,7 @@ a new entity for the result.
 - `matUnaryOp`
 - `matWindow`
 - `matZero`
+- `movementThrottle`
 - `mulZ`
 - `mulZR`
 - `nBezier3Area`
@@ -326,6 +327,7 @@ a new entity for the result.
 - `nBezier3XAt`
 - `nBezier3YAt`
 - `negZ`
+- `penTool`
 - `polygonContains`
 - `polygonSignedArea`
 - `polyline2DFromPolyline`
@@ -443,7 +445,7 @@ a new entity for the result.
 
 ### Classes
 
-- `CurveDrawer`
+- `SingleLinkedList<T>`
 
 ### Constants
 

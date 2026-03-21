@@ -209,39 +209,36 @@ export function intersectNBezier3CircleFn(
 	};
 }
 
-export function subtractBezier3Rect(curve: CubicBezier, rect: Rectangle) {
+export function cutBezier3Rect(
+	curve: CubicBezier,
+	rect: Rectangle,
+): (CubicBezier & { inside: boolean })[] {
 	const intersections = intersectBezier3Rect(curve, rect);
-	if (intersections.length > 0) {
-		const phase = intersections[0]!.d1 > 0 ? 1 : 0;
-		return bezier3Split(
-			curve,
-			intersections.map((i) => i.t1),
-			0,
-		).filter((_, i) => (i & 1) === phase);
-	} else if (rectContains(rect, curve.p0)) {
-		return [];
-	} else {
-		return [curve];
+	if (!intersections.length) {
+		return [{ ...curve, inside: rectContains(rect, curve.p0) }];
 	}
+	const phase = intersections[0]!.d1 > 0 ? 0 : 1;
+	return bezier3Split(
+		curve,
+		intersections.map((i) => i.t1),
+		0,
+	).map((curve, i) => ({ ...curve, inside: (i & 1) === phase }));
 }
 
-export function subtractBezier3Circle(
+export function cutBezier3Circle(
 	curve: CubicBezier,
 	circle: Circle,
 	fn: CircleIntersectionFn,
-) {
+): (CubicBezier & { inside: boolean })[] {
 	const rr = circle.r * circle.r;
 	const intersections = fn(circle.c, rr);
-	if (intersections.length > 0) {
-		const phase = intersections[0]!.d1 > 0 ? 1 : 0;
-		return bezier3Split(
-			curve,
-			intersections.map((i) => i.t1),
-			0,
-		).filter((_, i) => (i & 1) === phase);
-	} else if (circleContains(circle, curve.p0)) {
-		return [];
-	} else {
-		return [curve];
+	if (!intersections.length) {
+		return [{ ...curve, inside: circleContains(circle, curve.p0) }];
 	}
+	const phase = intersections[0]!.d1 > 0 ? 0 : 1;
+	return bezier3Split(
+		curve,
+		intersections.map((i) => i.t1),
+		0,
+	).map((curve, i) => ({ ...curve, inside: (i & 1) === phase }));
 }

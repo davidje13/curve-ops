@@ -54,6 +54,8 @@ export {
 
 export {
 	type CircleIntersectionFn,
+	cutBezier3Circle,
+	cutBezier3Rect,
 	intersectBezier3Circle,
 	intersectBezier3CircleFn,
 	intersectBezier3Line,
@@ -63,8 +65,6 @@ export {
 	isOverlapAABox,
 	isOverlapAABoxCircle,
 	isOverlapAABoxCircleR2,
-	subtractBezier3Circle,
-	subtractBezier3Rect,
 } from './math/geometry/2d/intersection.mts';
 
 export {

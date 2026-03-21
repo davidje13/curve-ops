@@ -1,6 +1,8 @@
 import {
 	bezier3Bounds,
 	bezier3SVG,
+	cutBezier3Circle,
+	cutBezier3Rect,
 	intersectBezier3CircleFn,
 	isOverlapAABox,
 	isOverlapAABoxCircleR2,
@@ -12,8 +14,6 @@ import {
 	rectBounds,
 	rectFromLine,
 	SingleLinkedList,
-	subtractBezier3Circle,
-	subtractBezier3Rect,
 	type AxisAlignedBox,
 	type Circle,
 	type CircleIntersectionFn,
@@ -65,10 +65,14 @@ document.body.append(
 				let parts = [seg._curve];
 				if (isOverlapAABoxCircleR2(seg._bounds, endCap.c, rr)) {
 					seg._circFn ??= intersectBezier3CircleFn(seg._curve);
-					parts = subtractBezier3Circle(seg._curve, endCap, seg._circFn);
+					parts = cutBezier3Circle(seg._curve, endCap, seg._circFn).filter(
+						(c) => !c.inside,
+					);
 				}
 				if (lineBounds && isOverlapAABox(seg._bounds, lineBounds)) {
-					parts = parts.flatMap((c) => subtractBezier3Rect(c, line!));
+					parts = parts
+						.flatMap((c) => cutBezier3Rect(c, line!))
+						.filter((c) => !c.inside);
 				}
 				if (parts.length !== 1) {
 					// removed or split

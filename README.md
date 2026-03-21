@@ -23,7 +23,7 @@ code removal) for minimal deployed code size.
     - `QuadraticBezier` (`bezier2`) / `CubicBezier` (`bezier3`): Optimisations
       and extra features for 2D quadratic and cubic Béziers
 - Shape overlap detection
-- Shape intersection, subtraction
+- Shape intersection, subtraction (`cut*`)
 - Least squares curve fitting
   - optional fixed endpoints and direction
 - `Vector<N>` (`vec`): n-D point / vector operations
@@ -205,6 +205,8 @@ a new entity for the result.
 - `circleSVG(circle)`
 - `complexCompanionMat(z)`
 - `conjugateZ(z)`
+- `cutBezier3Circle`
+- `cutBezier3Rect`
 - `divRZ(num, den)`
 - `divZ(num, den)`
 - `erf(x)`
@@ -416,8 +418,6 @@ a new entity for the result.
 - `rectFromLine`
 - `rectSVG`
 - `subRZ`
-- `subtractBezier3Circle`
-- `subtractBezier3Rect`
 - `subZ`
 - `unscaledFresnelCIntegral`
 - `unscaledFresnelSIntegral`

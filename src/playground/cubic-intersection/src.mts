@@ -7,6 +7,8 @@ import {
 	circleBounds,
 	circleContains,
 	circleSVG,
+	cutBezier3Circle,
+	cutBezier3Rect,
 	intersectBezier3Circle,
 	intersectBezier3CircleFn,
 	intersectBezier3Rect,
@@ -20,8 +22,6 @@ import {
 	rectContains,
 	rectFromLine,
 	rectSVG,
-	subtractBezier3Circle,
-	subtractBezier3Rect,
 } from '../../index.mts';
 import { makeInteractive, mk } from '../dom.mts';
 
@@ -128,12 +128,13 @@ document.body.append(
 		addSVGPath('ctl', () => bezier3SVG(bezier.current, undefined, 'M', true));
 
 		addSVGPath('curve', () =>
-			subtractBezier3Circle(
+			cutBezier3Circle(
 				bezier.current,
 				circle.current,
 				intersectBezier3CircleFn(bezier.current),
 			)
-				.flatMap((c) => subtractBezier3Rect(c, box.current))
+				.flatMap((c) => (c.inside ? [] : cutBezier3Rect(c, box.current)))
+				.filter((c) => !c.inside)
 				.map((c) => bezier3SVG(c))
 				.join(''),
 		);

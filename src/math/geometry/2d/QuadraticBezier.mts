@@ -284,6 +284,25 @@ export function bezier2RMSDistance(
 	return matElementNorm(diff);
 }
 
+export const bezier2Transform = (
+	{ p0, c1, p2 }: QuadraticBezier,
+	transform: (pt: Pt) => Pt,
+): QuadraticBezier => ({
+	p0: transform(p0),
+	c1: transform(c1),
+	p2: transform(p2),
+});
+
+export const bezier2Scale = (
+	{ p0, c1, p2 }: QuadraticBezier,
+	scaleX: number,
+	scaleY = scaleX,
+): QuadraticBezier => ({
+	p0: { x: p0.x * scaleX, y: p0.y * scaleY },
+	c1: { x: c1.x * scaleX, y: c1.y * scaleY },
+	p2: { x: p2.x * scaleX, y: p2.y * scaleY },
+});
+
 export const bezier2Translate = (
 	{ p0, c1, p2 }: QuadraticBezier,
 	shift: Pt,

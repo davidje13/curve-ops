@@ -60,6 +60,23 @@ export const lineTangent = (line: LineSegment): Pt =>
 
 export const lineNormal = (line: LineSegment): Pt => ptRot90(lineTangent(line));
 
+export const lineTransform = (
+	{ p0, p1 }: LineSegment,
+	transform: (pt: Pt) => Pt,
+): LineSegment => ({
+	p0: transform(p0),
+	p1: transform(p1),
+});
+
+export const lineScale = (
+	{ p0, p1 }: LineSegment,
+	scaleX: number,
+	scaleY = scaleX,
+): LineSegment => ({
+	p0: { x: p0.x * scaleX, y: p0.y * scaleY },
+	p1: { x: p1.x * scaleX, y: p1.y * scaleY },
+});
+
 export const lineTranslate = (
 	{ p0, p1 }: LineSegment,
 	shift: Pt,

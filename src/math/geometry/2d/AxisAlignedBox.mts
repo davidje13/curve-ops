@@ -1,4 +1,4 @@
-import { ptMid, ptSVG, type Pt } from './Pt.mts';
+import { PT0, ptMid, ptSVG, type Pt } from './Pt.mts';
 
 export interface AxisAlignedBox {
 	readonly l: Pt;
@@ -16,6 +16,11 @@ export function aaBoxFromXY(
 	return { l: { x: minX, y: minY }, h: { x: maxX, y: maxY } };
 }
 
+export const aaBoxGrow = ({ l, h }: AxisAlignedBox, grow: number) => ({
+	l: { x: l.x - grow, y: l.y - grow },
+	h: { x: h.x + grow, y: h.y + grow },
+});
+
 export const aaBoxMidpoint = ({ l, h }: AxisAlignedBox) => ptMid(l, h);
 
 export const aaBoxArea = ({ l, h }: AxisAlignedBox) =>
@@ -28,3 +33,8 @@ export const aaBoxSVG = (
 	{ l, h }: AxisAlignedBox,
 	precision?: number | undefined,
 ) => `M${ptSVG(l, precision)}H${h.x}V${h.y}H${l.x}Z`;
+
+export const AABOX0: {
+	readonly l: { readonly x: 0; readonly y: 0 };
+	readonly h: { readonly x: 0; readonly y: 0 };
+} = { l: PT0, h: PT0 };

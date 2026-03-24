@@ -337,6 +337,27 @@ export function bezier3RMSDistance(
 	return matElementNorm(diff);
 }
 
+export const bezier3Transform = (
+	{ p0, c1, c2, p3 }: CubicBezier,
+	transform: (pt: Pt) => Pt,
+): CubicBezier => ({
+	p0: transform(p0),
+	c1: transform(c1),
+	c2: transform(c2),
+	p3: transform(p3),
+});
+
+export const bezier3Scale = (
+	{ p0, c1, c2, p3 }: CubicBezier,
+	scaleX: number,
+	scaleY = scaleX,
+): CubicBezier => ({
+	p0: { x: p0.x * scaleX, y: p0.y * scaleY },
+	c1: { x: c1.x * scaleX, y: c1.y * scaleY },
+	c2: { x: c2.x * scaleX, y: c2.y * scaleY },
+	p3: { x: p3.x * scaleX, y: p3.y * scaleY },
+});
+
 export const bezier3Translate = (
 	{ p0, c1, c2, p3 }: CubicBezier,
 	shift: Pt,

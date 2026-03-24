@@ -117,8 +117,9 @@ a new entity for the result.
 - `aaBoxArea(box)`
 - `aaBoxContains(box, pt)`
 - `aaBoxFromXY(xs, ys)`
+- `aaBoxGrow(box, grow)`
 - `aaBoxMidpoint(box)`
-- `aaBoxSVG(box)`
+- `aaBoxSVG(box, precision = 6)`
 - `addZ(a, b)`
 - `addZR(a, b)`
 - `bezier2At(curve, t)`
@@ -136,8 +137,10 @@ a new entity for the result.
 - `bezier2PolynomialY(curve)`
 - `bezier2RMSDistance(curve, pts)`
 - `bezier2Split(curve, ts)`
-- `bezier2SVG(curve)`
+- `bezier2SVG(curve, precision = 6, prefix = 'M', controlLines = false)`
+- `bezier2Scale(curve, scale)`
 - `bezier2TangentAt(curve, t)`
+- `bezier2Transform(curve, transform)`
 - `bezier2Translate(curve, delta)`
 - `bezier2TsAtXEq(curve, x)`
 - `bezier2TsAtYEq(curve, y)`
@@ -163,8 +166,10 @@ a new entity for the result.
 - `bezier3PolynomialY(curve)`
 - `bezier3RMSDistance(curve, pts)`
 - `bezier3Split(curve, ts)`
-- `bezier3SVG(curve)`
+- `bezier3SVG(curve, precision = 6, prefix = 'M', controlLines = false)`
+- `bezier3Scale(curve, scale)`
 - `bezier3TangentAt(curve, t)`
+- `bezier3Transform(curve, transform)`
 - `bezier3Translate(curve, delta)`
 - `bezier3TsAtXEq(curve, x)`
 - `bezier3TsAtYEq(curve, y)`
@@ -193,16 +198,18 @@ a new entity for the result.
 - `bezierNormalAt(curve, t)`
 - `bezierOrder(curve)`
 - `bezierPolynomials(curve)`
+- `bezierScale(curve, scale)`
 - `bezierSplit(curve, ts)`
-- `bezierSVG(curve)`
+- `bezierSVG(curve, precision = 6, prefix = 'M', controlLines = false)`
 - `bezierTangentAt(curve, t)`
+- `bezierTransform(curve, transform)`
 - `bezierTranslate(curve, delta)`
 - `binomial(a, b)`
 - `circleArea(circle)`
 - `circleBounds(circle)`
 - `circleCircumference(circle)`
 - `circleContains(circle, pt)`
-- `circleSVG(circle)`
+- `circleSVG(circle, precision = 6)`
 - `complexCompanionMat(z)`
 - `conjugateZ(z)`
 - `cutBezier3Circle`
@@ -216,119 +223,122 @@ a new entity for the result.
 - `expZ(z)`
 - `fresnelCIntegral(x)`
 - `fresnelSIntegral(x)`
-- `intersectBezier3Circle`
-- `intersectBezier3CircleFn`
-- `intersectBezier3Line`
-- `intersectBezier3Rect`
-- `intersectLineLine`
-- `intersectNBezier3Circle`
-- `intersectNBezier3CircleFn`
-- `invZ`
-- `isOverlapAABox`
-- `isOverlapAABoxCircle`
-- `isOverlapAABoxCircleR2`
-- `lineAt`
-- `lineBisect`
-- `lineBounds`
-- `lineDerivative`
-- `lineFromBezier`
-- `lineFromPts`
-- `lineLength`
-- `lineMidpoint`
-- `lineNormal`
-- `linePolynomialX`
-- `linePolynomialY`
-- `lineSplit`
-- `lineSVG`
-- `lineTangent`
-- `lineTranslate`
-- `lineTsAtXEq`
-- `lineTsAtYEq`
-- `lineXAt`
-- `lineYAt`
-- `mat1Determinant`
-- `mat1Eigenvalues`
-- `mat1Eigenvector`
-- `mat1Inverse`
-- `mat1LeftInverse`
-- `mat1RightInverse`
-- `mat1Trace`
-- `mat2Determinant`
-- `mat2Eigenvalues`
-- `mat2Eigenvector`
-- `mat2Inverse`
-- `mat2LeftInverse`
-- `mat2RightInverse`
-- `mat2Trace`
-- `mat3Determinant`
-- `mat3Eigenvalues`
-- `mat3Eigenvector`
-- `mat3FromQuat`
-- `mat3FromUnitQuat`
-- `mat3Inverse`
-- `mat3LeftInverse`
-- `mat3RightInverse`
-- `mat3Trace`
-- `mat4Determinant`
-- `mat4Eigenvalues`
-- `mat4Eigenvector`
-- `mat4Inverse`
-- `mat4LeftInverse`
-- `mat4RightInverse`
-- `mat4Trace`
-- `matAdd`
-- `matAddColumnwise`
-- `matBinaryOp`
-- `matDeterminant`
-- `matEigenvalues`
-- `matEigenvector`
-- `matElementNorm`
-- `matElementNorm2`
-- `matFrom`
-- `matFromArray`
-- `matFromArrayFn`
-- `matFromDiag`
-- `matFromEyeTargetUp`
-- `matFromPts`
-- `matFromRotationBetween`
-- `matFromVecArray`
-- `matIdent`
-- `matInverse`
-- `matLeftInverse`
-- `matLerp`
-- `matMid`
-- `matMinor`
-- `matMul`
-- `matMulABTranspose`
-- `matMulATransposeB`
-- `matPadIdent`
-- `matPrint`
-- `matProjectVec3`
-- `matReshape`
-- `matRightInverse`
-- `matScale`
-- `matScaleAdd`
-- `matSkewSymmetricCrossProduct`
-- `matSub`
-- `matSumDiagDeterminant2`
-- `matSumDiagDeterminant3`
-- `matTrace`
-- `matTranspose`
-- `matUnaryOp`
-- `matWindow`
-- `matZero`
+- `intersectBezier3Circle(curve, circle, maxError = 1e-4)`
+- `intersectBezier3CircleFn(curve)`
+- `intersectBezier3Line(curve, line)`
+- `intersectBezier3Rect(curve, rect, maxError = 1e-4)`
+- `intersectLineLine(line1, line2)`
+- `intersectNBezier3Circle(normCurve, circle, maxError = 1e-4)`
+- `intersectNBezier3CircleFn(normCurve)`
+- `invZ(z)`
+- `isOverlapAABox(box1, box2)`
+- `isOverlapAABoxCircle(box, circle)`
+- `isOverlapAABoxCircleR2(box, centre, radiusSquared)`
+- `lineAt(line, t)`
+- `lineBisect(line, t = 0.5)`
+- `lineBounds(line)`
+- `lineDerivative(line)`
+- `lineFromBezier(bezier)`
+- `lineFromPts(p0, p1)`
+- `lineLength(line)`
+- `lineMidpoint(line)`
+- `lineNormal(line)`
+- `linePolynomialX(line)`
+- `linePolynomialY(line)`
+- `lineScale(line, scale)`
+- `lineSplit(line, ts)`
+- `lineSVG(line, precision = 6, prefix = 'M')`
+- `lineTangent(line)`
+- `lineTransform(line, transform)`
+- `lineTranslate(line, delta)`
+- `lineTsAtXEq(line, x)`
+- `lineTsAtYEq(line, y)`
+- `lineXAt(line, t)`
+- `lineYAt(line, t)`
+- `mat1Determinant(matrix)`
+- `mat1Eigenvalues(matrix)`
+- `mat1Eigenvector(matrix, eigenvalue)`
+- `mat1Inverse(matrix)`
+- `mat1LeftInverse(matrix)`
+- `mat1RightInverse(matrix)`
+- `mat1Trace(matrix)`
+- `mat2Determinant(matrix)`
+- `mat2Eigenvalues(matrix)`
+- `mat2Eigenvector(matrix, eigenvalue)`
+- `mat2Inverse(matrix)`
+- `mat2LeftInverse(matrix)`
+- `mat2RightInverse(matrix)`
+- `mat2Trace(matrix)`
+- `mat3Determinant(matrix)`
+- `mat3Eigenvalues(matrix)`
+- `mat3Eigenvector(matrix, eigenvalue)`
+- `mat3FromQuat(quaternion)`
+- `mat3FromUnitQuat(quaternion)`
+- `mat3Inverse(matrix)`
+- `mat3LeftInverse(matrix)`
+- `mat3RightInverse(matrix)`
+- `mat3Trace(matrix)`
+- `mat4Determinant(matrix)`
+- `mat4Eigenvalues(matrix)`
+- `mat4Eigenvector(matrix, eigenvalue)`
+- `mat4Inverse(matrix)`
+- `mat4LeftInverse(matrix)`
+- `mat4RightInverse(matrix)`
+- `mat4Trace(matrix)`
+- `matAdd(matrix1, matrix2)`
+- `matAddColumnwise(matrix, vector)`
+- `matBinaryOp(matrix1, matrix2, fn, name = '+')`
+- `matDeterminant(matrix)`
+- `matEigenvalues(matrix)`
+- `matEigenvector(matrix, eigenvalue)`
+- `matElementNorm(matrix)`
+- `matElementNorm2(matrix)`
+- `matFrom(array2D)`
+- `matFromArray(flatArray, n)`
+- `matFromArrayFn(array, rowMapping)`
+- `matFromDiag(array)`
+- `matFromEyeTargetUp(eye, target, up)`
+- `matFromPts(pointArray)`
+- `matFromRotationBetween(norm1, norm2)`
+- `matFromVecArray(vectorArray)`
+- `matIdent(n)`
+- `matInverse(matrix)`
+- `matLeftInverse(matrix)`
+- `matLerp(matrix1, matrix2, t)`
+- `matMid(matrix1, matrix2)`
+- `matMinor(matrix, row, column)`
+- `matMul(matrix1, matrix2)`
+- `matMulABTranspose(matrix1, matrix2)`
+- `matMulATransposeB(matrix1, matrix2)`
+- `matMulColumnwise(matrix, vector)`
+- `matPadIdent(matrix, size)`
+- `matPrint(matrix)`
+- `matProjectVec3(matrix, vector)`
+- `matReshape(matrix, n)`
+- `matRightInverse(matrix)`
+- `matScale(matrix, scale)`
+- `matScaleAdd(matrix1, scale, matrix2)`
+- `matSkewSymmetricCrossProduct(vector)`
+- `matSub(matrix1, matrix2)`
+- `matSumDiagDeterminant2(matrix)`
+- `matSumDiagDeterminant3(matrix)`
+- `matTrace(matrix)`
+- `matTranspose(matrix)`
+- `matUnaryOp(matrix, fn)`
+- `matWindow(matrix, row0, column0, rows, columns)`
+- `matZero(m, n)`
 - `movementThrottle`
-- `mulZ`
-- `mulZR`
-- `nBezier3Area`
-- `nBezier3At`
-- `nBezier3Curvature`
-- `nBezier3Derivative`
-- `nBezier3InflectionTs`
-- `nBezier3Moment`
-- `nBezier3XAt`
-- `nBezier3YAt`
-- `negZ`
+- `mulZ(z1, z2)`
+- `mulZR(z, scale)`
+- `nBezier3Area(normCurve)`
+- `nBezier3At(normCurve, t)`
+- `nBezier3Curvature(normCurve, t)`
+- `nBezier3Derivative(normCurve, t)`
+- `nBezier3InflectionTs(normCurve)`
+- `nBezier3Moment(normCurve)`
+- `nBezier3XAt(normCurve, t)`
+- `nBezier3YAt(normCurve, t)`
+- `negZ(z)`
 - `penTool`
 - `polygonContains`
 - `polygonSignedArea`
@@ -449,6 +459,7 @@ a new entity for the result.
 
 ### Constants
 
+- `AABOX0`: Constant for `{ l: { x: 0, y: 0 }, h: { x: 0, y: 0 } }`.
 - `bezier2M`: Constant for `bezierM(3)`.
 - `bezier2MInv`: Constant for `matInverse(bezierM(3))`.
 - `bezier3M`: Constant for `bezierM(4)`.

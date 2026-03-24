@@ -16,6 +16,8 @@ import {
 	matLeftInverse,
 	matMul,
 	matMulABTranspose,
+	matMulColumnwise,
+	matScale,
 	matWindow,
 	type Matrix,
 	type SquareMatrix,
@@ -25,6 +27,7 @@ import {
 	matFromVecArray,
 	vec3Cross,
 	vecAdd,
+	vecArrayFromMat,
 	vecFrom,
 	vecLerp,
 	vecMad,
@@ -337,6 +340,20 @@ export const bezierNormalAt = <Points extends number>(
 	curve: Bezier<Points, 2>,
 	t: number,
 ): Vector<2> => matMul(bezierTangentAt(curve, t), MAT2ROT90);
+
+export const bezierTransform = <Points extends number, Dim extends number>(
+	curve: Bezier<Points, Dim>,
+	transform: (vec: Vector<Dim>) => Vector<Dim>,
+) =>
+	matFromVecArray(vecArrayFromMat(curve).map(transform)) as Bezier<Points, Dim>;
+
+export const bezierScale = <Points extends number, Dim extends number>(
+	curve: Bezier<Points, Dim>,
+	scale: number | Vector<Dim>,
+): Bezier<Points, Dim> =>
+	typeof scale === 'number'
+		? matScale(curve, scale)
+		: matMulColumnwise(curve, scale);
 
 export const bezierTranslate = <Points extends number, Dim extends number>(
 	curve: Bezier<Points, Dim>,

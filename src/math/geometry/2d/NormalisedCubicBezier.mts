@@ -105,10 +105,9 @@ export function nBezier3InflectionTs({ c1, c2, p3 }: NormalisedCubicBezier) {
 	]);
 }
 
-export function nBezier3Area({ c1, c2, p3 }: NormalisedCubicBezier) {
-	// thanks, https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html
-	return 0.15 * ((p3.x + c2.x) * c1.y + (2 * p3.x - c1.x) * c2.y);
-}
+// thanks, https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html
+export const nBezier3Area = ({ c1, c2, p3 }: NormalisedCubicBezier) =>
+	0.15 * ((p3.x + c2.x) * c1.y + (2 * p3.x - c1.x) * c2.y);
 
 export function nBezier3Moment({ c1, c2, p3 }: NormalisedCubicBezier) {
 	// thanks, https://raphlinus.github.io/curves/2021/03/11/bezier-fitting.html

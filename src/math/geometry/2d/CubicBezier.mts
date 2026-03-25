@@ -22,6 +22,7 @@ import type { Polyline2D } from './Polyline2D.mts';
 import {
 	matFromPts,
 	ptAdd,
+	ptCross,
 	ptDist,
 	ptDist2,
 	ptLen,
@@ -307,6 +308,43 @@ export const bezier3TangentAt = (curve: CubicBezier, t: number): Pt =>
 
 export const bezier3NormalAt = (curve: CubicBezier, t: number): Pt =>
 	ptRot90(bezier3TangentAt(curve, t));
+
+export const bezier3OpenArea = (curve: CubicBezier) =>
+	bezier3SignedArea(curve) + 0.5 * ptCross(curve.p3, curve.p0);
+
+export function bezier3SignedArea({ p0, c1, c2, p3 }: CubicBezier) {
+	// translate to p0 = 0
+	const C1 = ptSub(c1, p0);
+	const C2 = ptSub(c2, p0);
+	const P3 = ptSub(p3, p0);
+
+	// thanks, https://en.wikipedia.org/wiki/Green%27s_theorem
+	// integral(L dx + M dy) = int(int(dM/dx - dL/dy))dA
+	// for area: dM/dx - dL/dy = 1
+	// M = 0.5 x, L = -0.5 x
+	// area = 0.5 * integral_ccw(x dy - y dx)
+	// area = -0.5 * integral_cw(cross(c(t), dc(t)/dt))
+	// c(t) = 3 * c1 * t + 3 * (c2 - 2 * c1) * t^2 + (p3 + 3 * (c1 - c2)) * t^3
+	// dc(t)/dt = 3 * c1 + 6 * (c2 - 2 * c1) * t + 3 * (p3 + 3 * (c1 - c2)) * t^2
+	// B = c1.x, C = c2.x, D = p3.x
+	// X = c1.y, Y = c2.y, Z = p3.y
+
+	// cross(c(t), dc(t)/dt) =
+	// + (9 B Y - 6 B Z - 9 C X + 3 C Z + 6 D X - 3 D Y) * t^4
+	// + (6 B Z - 18 B Y + 18 C X - 6 D X) * t^3
+	// + (9 B Y - 9 C X) * t^2
+
+	// integral(cross(...)) =
+	// + (9 B Y - 6 B Z - 9 C X + 3 C Z + 6 D X - 3 D Y)/5 * t^5
+	// + (6 B Z - 18 B Y + 18 C X - 6 D X)/4 * t^4
+	// + (3 B Y - 3 C X) * t^3
+
+	// int(...)[0 1] = (BY - CX + BZ - DX + 2(CZ - DY))*3/10
+	// area = -0.5 * integral
+	// area = (cross(c2,c1) + cross(p3,c1) + 2*cross(p3,c2))*3/20
+
+	return 0.15 * (ptCross(C2, C1) + ptCross(P3, C1) + 2 * ptCross(P3, C2));
+}
 
 export function bezier3RMSDistance(
 	curve: CubicBezier,

@@ -60,6 +60,11 @@ export const lineTangent = (line: LineSegment): Pt =>
 
 export const lineNormal = (line: LineSegment): Pt => ptRot90(lineTangent(line));
 
+// open area functions compute the area of the shape from 0,0 to the start of the curve,
+// along the curve, and back to 0,0. They can be added together to compute the volume of
+// shapes with edges made of multiple curves.
+export const lineOpenArea = ({ p0, p1 }: LineSegment) => 0.5 * ptCross(p1, p0);
+
 export const lineTransform = (
 	{ p0, p1 }: LineSegment,
 	transform: (pt: Pt) => Pt,

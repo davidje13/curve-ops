@@ -133,12 +133,14 @@ a new entity for the result.
 - `bezier2FromPts(pts)`
 - `bezier2LengthEstimate(curve)`
 - `bezier2NormalAt(curve, t)`
+- `bezier2OpenArea(curve)`
 - `bezier2PolynomialX(curve)`
 - `bezier2PolynomialY(curve)`
 - `bezier2RMSDistance(curve, pts)`
 - `bezier2Split(curve, ts)`
 - `bezier2SVG(curve, precision = 6, prefix = 'M', controlLines = false)`
 - `bezier2Scale(curve, scale)`
+- `bezier2SignedArea(curve)`
 - `bezier2TangentAt(curve, t)`
 - `bezier2Transform(curve, transform)`
 - `bezier2Translate(curve, delta)`
@@ -161,6 +163,7 @@ a new entity for the result.
 - `bezier3FromQuad(p0, c1, c2, p3)`
 - `bezier3LengthEstimate(curve)`
 - `bezier3NormalAt(curve, t)`
+- `bezier3OpenArea(curve)`
 - `bezier3Normalise(curve)`
 - `bezier3PolynomialX(curve)`
 - `bezier3PolynomialY(curve)`
@@ -168,6 +171,7 @@ a new entity for the result.
 - `bezier3Split(curve, ts)`
 - `bezier3SVG(curve, precision = 6, prefix = 'M', controlLines = false)`
 - `bezier3Scale(curve, scale)`
+- `bezier3SignedArea(curve)`
 - `bezier3TangentAt(curve, t)`
 - `bezier3Transform(curve, transform)`
 - `bezier3Translate(curve, delta)`
@@ -243,6 +247,7 @@ a new entity for the result.
 - `lineLength(line)`
 - `lineMidpoint(line)`
 - `lineNormal(line)`
+- `lineOpenArea(line)`
 - `linePolynomialX(line)`
 - `linePolynomialY(line)`
 - `lineScale(line, scale)`
@@ -344,6 +349,7 @@ a new entity for the result.
 - `polygonSignedArea`
 - `polyline2DFromPolyline`
 - `polyline2DFromPts`
+- `polyline2DOpenArea`
 - `polyline2DSVG`
 - `polylineFromPolyline2D`
 - `polylineFromVecs`

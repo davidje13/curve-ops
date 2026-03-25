@@ -1,5 +1,5 @@
 import type { Polyline } from '../Polyline.mts';
-import { ptDist, ptSVG, type Pt } from './Pt.mts';
+import { ptCross, ptDist, ptSVG, type Pt } from './Pt.mts';
 
 export interface PtWithDist extends Pt {
 	readonly d: number;
@@ -21,6 +21,20 @@ export function polyline2DFromPts(points: readonly Pt[]): Polyline2D {
 		prev = pt;
 	}
 	return r;
+}
+
+export function polyline2DOpenArea(points: readonly Pt[]): number {
+	if (points.length < 2) {
+		return 0;
+	}
+
+	let sum = 0;
+	let prev = points[points.length - 1]!;
+	for (const cur of points) {
+		sum += ptCross(cur, prev);
+		prev = cur;
+	}
+	return sum * 0.5;
 }
 
 export const polyline2DSVG = (

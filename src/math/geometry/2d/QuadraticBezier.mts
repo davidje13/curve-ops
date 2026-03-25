@@ -26,6 +26,7 @@ import type { Polyline2D } from './Polyline2D.mts';
 import {
 	matFromPts,
 	ptAdd,
+	ptCross,
 	ptDist,
 	ptDist2,
 	ptDot,
@@ -255,6 +256,35 @@ export const bezier2TangentAt = (curve: QuadraticBezier, t: number): Pt =>
 
 export const bezier2NormalAt = (curve: QuadraticBezier, t: number): Pt =>
 	ptRot90(bezier2TangentAt(curve, t));
+
+export const bezier2OpenArea = ({ p0, c1, p2 }: QuadraticBezier) =>
+	(1 / 6) * (ptCross(p0, p2) + 4 * ptCross(ptSub(p2, p0), c1));
+
+// thanks, https://en.wikipedia.org/wiki/Green%27s_theorem
+// integral(L dx + M dy) = int(int(dM/dx - dL/dy))dA
+// for area: dM/dx - dL/dy = 1
+// M = 0.5 x, L = -0.5 x
+// area = 0.5 * integral_ccw(x dy - y dx)
+// area = -0.5 * integral_cw(cross(c(t), dc(t)/dt))
+// c(t) = 2 * c1 * t + (p2 - 2 * c1) * t^2
+// dc(t)/dt = 2 * c1 + 2 * (p2 - 2 * c1)
+// A = c1.x, B = p2.x
+// C = c1.y, D = p2.y
+
+// cross(c(t), dc(t)/dt) =
+// + 2 (BC - AD) t^2
+// + 4 (AD - BC) t
+
+// integral(cross(...)) =
+// + 2/3 (BC - AD) t^3
+// + 2 (AD - BC) t^2
+
+// int(...)[0 1] = (AD - BC)*4/3
+// area = -0.5 * integral
+// area = cross(p2,c1)*2/3
+
+export const bezier2SignedArea = ({ p0, c1, p2 }: QuadraticBezier) =>
+	(2 / 3) * ptCross(ptSub(p2, p0), ptSub(c1, p0));
 
 export function bezier2RMSDistance(
 	curve: QuadraticBezier,

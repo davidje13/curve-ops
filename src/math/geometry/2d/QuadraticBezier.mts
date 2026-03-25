@@ -262,8 +262,7 @@ export const bezier2OpenArea = ({ p0, c1, p2 }: QuadraticBezier) =>
 
 // thanks, https://en.wikipedia.org/wiki/Green%27s_theorem
 // integral(L dx + M dy) = int(int(dM/dx - dL/dy))dA
-// for area: dM/dx - dL/dy = 1
-// M = 0.5 x, L = -0.5 x
+// for area: dM/dx - dL/dy = 1 => M = 0.5 x, L = -0.5 x
 // area = 0.5 * integral_ccw(x dy - y dx)
 // area = -0.5 * integral_cw(cross(c(t), dc(t)/dt))
 // c(t) = 2 * c1 * t + (p2 - 2 * c1) * t^2
@@ -271,17 +270,10 @@ export const bezier2OpenArea = ({ p0, c1, p2 }: QuadraticBezier) =>
 // A = c1.x, B = p2.x
 // C = c1.y, D = p2.y
 
-// cross(c(t), dc(t)/dt) =
-// + 2 (BC - AD) t^2
-// + 4 (AD - BC) t
-
-// integral(cross(...)) =
-// + 2/3 (BC - AD) t^3
-// + 2 (AD - BC) t^2
-
+// cross(c(t), dc(t)/dt) = 2 (BC - AD) t^2 + 4 (AD - BC) t
+// integral(cross(...)) = 2/3 (BC - AD) t^3 + 2 (AD - BC) t^2
 // int(...)[0 1] = (AD - BC)*4/3
-// area = -0.5 * integral
-// area = cross(p2,c1)*2/3
+// area = -0.5 * integral = cross(p2,c1)*2/3
 
 export const bezier2SignedArea = ({ p0, c1, p2 }: QuadraticBezier) =>
 	(2 / 3) * ptCross(ptSub(p2, p0), ptSub(c1, p0));
@@ -489,6 +481,59 @@ export function bezier2Split(
 	r.push({ p0: pp0, c1: pc1, p2: pEnd });
 	return r;
 }
+
+export function bezier2Subdivide(
+	{ p0, c1, p2 }: QuadraticBezier,
+	maxError: number,
+	maxDivisions = 1000,
+): readonly Pt[] {
+	// thanks, https://raphlinus.github.io/graphics/curves/2019/12/23/flatten-quadbez.html
+
+	const dd = ptSub(ptAdd(p0, p2), ptMul(c1, 2));
+	const ldd = ptLen(dd);
+	if (ldd < maxError * 2) {
+		return [p0, p2];
+	}
+	const chord = ptSub(p2, p0);
+	if (ptLen2(chord) < 4 * maxError * maxError) {
+		return [p0, ptMid(ptMid(p0, p2), c1), p2];
+	}
+	const u0 = ptDot(ptSub(c1, p0), dd);
+	const u2 = ptDot(ptSub(p2, c1), dd);
+	const icross = 1 / ptCross(chord, dd);
+	const a0 = subdivideIntegralApprox(u0 * icross);
+	const a2 = subdivideIntegralApprox(u2 * icross);
+	const n = Math.min(
+		Math.max(
+			Math.ceil(
+				(0.5 * Math.abs(a2 - a0)) /
+					Math.sqrt(ldd * Math.abs(u2 - u0) * icross * icross * maxError),
+			),
+			2,
+		),
+		maxDivisions,
+	);
+	const x0 = subdivideIntegralInvApprox(a0);
+	const x2 = subdivideIntegralInvApprox(a2);
+	const pts: Pt[] = [p0];
+	const am = (a2 - a0) / n;
+	const tm = 1 / (x2 - x0);
+	const f2 = ptMul(dd, tm * tm);
+	const f1 = ptMad(ptSub(c1, p0), tm * 2, ptMul(f2, -2 * x0));
+	const f0 = ptMad(ptMad(f2, x0, f1), -x0, p0);
+	for (let i = 1; i < n; i++) {
+		const x = subdivideIntegralInvApprox(a0 + am * i);
+		pts.push(ptMad(ptMad(f2, x, f1), x, f0));
+	}
+	pts.push(p2);
+	return pts;
+}
+
+// these approximations from https://raphlinus.github.io/graphics/curves/2019/12/23/flatten-quadbez.html
+const subdivideIntegralApprox = (x: number) =>
+	x / (0.33 + Math.sqrt(Math.hypot(0.4489, 0.5 * x)));
+const subdivideIntegralInvApprox = (x: number) =>
+	x * (0.61 + Math.hypot(0.39, 0.5 * x));
 
 export const bezier2SVG = (
 	{ p0, c1, p2 }: QuadraticBezier,

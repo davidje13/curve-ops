@@ -29,6 +29,7 @@ import {
 	ptLen2,
 	ptLerp,
 	ptMad,
+	ptMid,
 	ptMul,
 	ptNorm,
 	ptRot90,
@@ -320,8 +321,7 @@ export function bezier3SignedArea({ p0, c1, c2, p3 }: CubicBezier) {
 
 	// thanks, https://en.wikipedia.org/wiki/Green%27s_theorem
 	// integral(L dx + M dy) = int(int(dM/dx - dL/dy))dA
-	// for area: dM/dx - dL/dy = 1
-	// M = 0.5 x, L = -0.5 x
+	// for area: dM/dx - dL/dy = 1 => M = 0.5 x, L = -0.5 x
 	// area = 0.5 * integral_ccw(x dy - y dx)
 	// area = -0.5 * integral_cw(cross(c(t), dc(t)/dt))
 	// c(t) = 3 * c1 * t + 3 * (c2 - 2 * c1) * t^2 + (p3 + 3 * (c1 - c2)) * t^3
@@ -329,19 +329,10 @@ export function bezier3SignedArea({ p0, c1, c2, p3 }: CubicBezier) {
 	// B = c1.x, C = c2.x, D = p3.x
 	// X = c1.y, Y = c2.y, Z = p3.y
 
-	// cross(c(t), dc(t)/dt) =
-	// + (9 B Y - 6 B Z - 9 C X + 3 C Z + 6 D X - 3 D Y) * t^4
-	// + (6 B Z - 18 B Y + 18 C X - 6 D X) * t^3
-	// + (9 B Y - 9 C X) * t^2
-
-	// integral(cross(...)) =
-	// + (9 B Y - 6 B Z - 9 C X + 3 C Z + 6 D X - 3 D Y)/5 * t^5
-	// + (6 B Z - 18 B Y + 18 C X - 6 D X)/4 * t^4
-	// + (3 B Y - 3 C X) * t^3
-
+	// cross(c(t), dc(t)/dt) = (9 B Y - 6 B Z - 9 C X + 3 C Z + 6 D X - 3 D Y) * t^4 + (6 B Z - 18 B Y + 18 C X - 6 D X) * t^3 + (9 B Y - 9 C X) * t^2
+	// integral(cross(...)) = (9 B Y - 6 B Z - 9 C X + 3 C Z + 6 D X - 3 D Y)/5 * t^5 + (6 B Z - 18 B Y + 18 C X - 6 D X)/4 * t^4 + (3 B Y - 3 C X) * t^3
 	// int(...)[0 1] = (BY - CX + BZ - DX + 2(CZ - DY))*3/10
-	// area = -0.5 * integral
-	// area = (cross(c2,c1) + cross(p3,c1) + 2*cross(p3,c2))*3/20
+	// area = -0.5 * integral = (cross(c2,c1) + cross(p3,c1) + 2*cross(p3,c2))*3/20
 
 	return 0.15 * (ptCross(C2, C1) + ptCross(P3, C1) + 2 * ptCross(P3, C2));
 }
@@ -427,6 +418,20 @@ export const bezier3YTurningPointTs = ({ p0, c1, c2, p3 }: CubicBezier) =>
 		2 * (p0.y + c2.y) - 4 * c1.y,
 		p3.y - p0.y + 3 * (c1.y - c2.y),
 	]);
+
+// thanks, https://fontforge.org/docs/techref/pfaeditmath.html#finding-points-of-inflection-of-a-spline
+export function bezier3InflectionTs({ p0, c1, c2, p3 }: CubicBezier) {
+	const C1 = ptSub(c1, p0);
+	const C2 = ptSub(c2, p0);
+	const P3 = ptSub(p3, p0);
+	const c1c2 = ptCross(C1, C2);
+	const c1p3 = ptCross(C1, P3);
+	return polynomial3Roots([
+		c1c2,
+		c1p3 - 3 * c1c2,
+		3 * c1c2 - 2 * c1p3 + ptCross(C2, P3),
+	]);
+}
 
 export const bezier3Bounds = (curve: CubicBezier): AxisAlignedBox =>
 	aaBoxFromXY(
@@ -558,6 +563,47 @@ export function bezier3Split(
 	}
 	r.push({ p0: pp0, c1: pc1, c2: pc2, p3: pEnd });
 	return r;
+}
+
+export function bezier3SubdivideBezier2(
+	{ p0, c1, c2, p3 }: CubicBezier,
+	maxError: number,
+	maxDivisions = 1000,
+): QuadraticBezier[] {
+	const f1 = ptMul(ptSub(c1, p0), 3);
+	const f2 = ptMul(ptMad(c1, -2, ptAdd(p0, c2)), 3);
+	const f3 = ptMad(ptSub(c1, c2), 3, ptSub(p3, p0));
+
+	let pA = p0;
+	let dA = f1;
+
+	const curves: QuadraticBezier[] = [];
+	const lenPolygon = ptDist(p0, c1) + ptDist(c1, c2) + ptDist(c2, p3);
+	const n = Math.min(
+		// TODO: better way to pick division count which uses maxError properly
+		Math.max(Math.ceil(Math.sqrt(Math.sqrt(lenPolygon / maxError))), 2),
+		maxDivisions,
+	);
+	for (let i = 1; i <= n; ++i) {
+		const tB = i / n; // TODO: better distribution
+		const pB = ptMad(ptMad(ptMad(f3, tB, f2), tB, f1), tB, p0);
+		const dB = ptMad(ptMad(f3, 3 * tB, ptMul(f2, 2)), tB, f1);
+		const den = ptCross(dA, dB);
+		const chord = ptSub(pB, pA);
+		const l1 = ptCross(chord, dB);
+		const l2 = ptCross(chord, dA);
+		// TODO: improve avoidance of "spikes" around areas of high curvature
+		const l1n = l1 / den;
+		if (l2 * den < 0 && l1n > 0 && l1n * n < lenPolygon) {
+			curves.push({ p0: pA, c1: ptMad(dA, l1n, pA), p2: pB });
+		} else {
+			curves.push({ p0: pA, c1: ptMid(pA, pB), p2: pB });
+		}
+		pA = pB;
+		dA = dB;
+	}
+
+	return curves;
 }
 
 export const bezier3SVG = (

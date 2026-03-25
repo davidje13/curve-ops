@@ -138,6 +138,7 @@ a new entity for the result.
 - `bezier2PolynomialY(curve)`
 - `bezier2RMSDistance(curve, pts)`
 - `bezier2Split(curve, ts)`
+- `bezier2Subdivide(curve, maxError, maxDivisions = 1000)`
 - `bezier2SVG(curve, precision = 6, prefix = 'M', controlLines = false)`
 - `bezier2Scale(curve, scale)`
 - `bezier2SignedArea(curve)`
@@ -161,6 +162,7 @@ a new entity for the result.
 - `bezier3FromPolylinePtsLeastSquaresFixEnds(pts, previous?)`
 - `bezier3FromPts(pts)`
 - `bezier3FromQuad(p0, c1, c2, p3)`
+- `bezier3InflectionTs(curve)`
 - `bezier3LengthEstimate(curve)`
 - `bezier3NormalAt(curve, t)`
 - `bezier3OpenArea(curve)`
@@ -169,6 +171,7 @@ a new entity for the result.
 - `bezier3PolynomialY(curve)`
 - `bezier3RMSDistance(curve, pts)`
 - `bezier3Split(curve, ts)`
+- `bezier3SubdivideBezier2(curve, maxError, maxDivisions = 1000)`
 - `bezier3SVG(curve, precision = 6, prefix = 'M', controlLines = false)`
 - `bezier3Scale(curve, scale)`
 - `bezier3SignedArea(curve)`

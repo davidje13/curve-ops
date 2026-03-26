@@ -171,6 +171,7 @@ a new entity for the result.
 - `bezier3PolynomialY(curve)`
 - `bezier3RMSDistance(curve, pts)`
 - `bezier3Split(curve, ts)`
+- `bezier3Subdivide(curve, maxError, maxDivisions = 1000)`
 - `bezier3SubdivideBezier2(curve, maxError, maxDivisions = 1000)`
 - `bezier3SVG(curve, precision = 6, prefix = 'M', controlLines = false)`
 - `bezier3Scale(curve, scale)`

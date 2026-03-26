@@ -46,6 +46,7 @@ export {
 	bezier3Scale,
 	bezier3SignedArea,
 	bezier3Split,
+	bezier3Subdivide,
 	bezier3SubdivideBezier2,
 	bezier3TangentAt,
 	bezier3Transform,

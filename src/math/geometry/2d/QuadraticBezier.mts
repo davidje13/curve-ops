@@ -482,57 +482,70 @@ export function bezier2Split(
 	return r;
 }
 
-export function bezier2Subdivide(
+export function internalBezier2SubdivisionCount(
 	{ p0, c1, p2 }: QuadraticBezier,
 	maxError: number,
-	maxDivisions = 1000,
-): readonly Pt[] {
+): { a0: number; a2: number; n: number } {
 	// thanks, https://raphlinus.github.io/graphics/curves/2019/12/23/flatten-quadbez.html
 
 	const dd = ptSub(ptAdd(p0, p2), ptMul(c1, 2));
 	const ldd = ptLen(dd);
 	if (ldd < maxError * 2) {
-		return [p0, p2];
+		return { a0: -1, a2: 1, n: 2 };
 	}
 	const chord = ptSub(p2, p0);
 	if (ptLen2(chord) < 4 * maxError * maxError) {
-		return [p0, ptMid(ptMid(p0, p2), c1), p2];
+		return { a0: -1, a2: 1, n: 3 };
 	}
 	const u0 = ptDot(ptSub(c1, p0), dd);
 	const u2 = ptDot(ptSub(p2, c1), dd);
 	const icross = 1 / ptCross(chord, dd);
 	const a0 = subdivideIntegralApprox(u0 * icross);
 	const a2 = subdivideIntegralApprox(u2 * icross);
-	const n = Math.min(
-		Math.max(
-			Math.ceil(
-				(0.5 * Math.abs(a2 - a0)) /
-					Math.sqrt(ldd * Math.abs(u2 - u0) * icross * icross * maxError),
-			),
-			2,
-		),
-		maxDivisions,
-	);
-	const x0 = subdivideIntegralInvApprox(a0);
-	const x2 = subdivideIntegralInvApprox(a2);
-	const pts: Pt[] = [p0];
-	const am = (a2 - a0) / n;
+	return {
+		a0,
+		a2,
+		n:
+			(0.5 * Math.abs(a2 - a0)) /
+			Math.sqrt(ldd * Math.abs(u2 - u0) * icross * icross * maxError),
+	};
+}
+
+export function bezier2Subdivide(
+	curve: QuadraticBezier,
+	maxError: number,
+	maxDivisions = 1000,
+): readonly Pt[] {
+	// thanks, https://raphlinus.github.io/graphics/curves/2019/12/23/flatten-quadbez.html
+
+	const { a0, a2, n } = internalBezier2SubdivisionCount(curve, maxError);
+	const N = Math.max(Math.ceil(Math.min(n, maxDivisions)), 2);
+	if (N <= 2) {
+		return [curve.p0, curve.p2];
+	}
+	const x0 = internalSubdivideIntegralInvApprox(a0);
+	const x2 = internalSubdivideIntegralInvApprox(a2);
+	const pts: Pt[] = [curve.p0];
+	const am = (a2 - a0) / N;
 	const tm = 1 / (x2 - x0);
-	const f2 = ptMul(dd, tm * tm);
-	const f1 = ptMad(ptSub(c1, p0), tm * 2, ptMul(f2, -2 * x0));
-	const f0 = ptMad(ptMad(f2, x0, f1), -x0, p0);
-	for (let i = 1; i < n; i++) {
-		const x = subdivideIntegralInvApprox(a0 + am * i);
+	const f2 = ptMul(
+		ptSub(ptAdd(curve.p0, curve.p2), ptMul(curve.c1, 2)),
+		tm * tm,
+	);
+	const f1 = ptMad(ptSub(curve.c1, curve.p0), tm * 2, ptMul(f2, -2 * x0));
+	const f0 = ptMad(ptMad(f2, x0, f1), -x0, curve.p0);
+	for (let i = 1; i < N; i++) {
+		const x = internalSubdivideIntegralInvApprox(a0 + am * i);
 		pts.push(ptMad(ptMad(f2, x, f1), x, f0));
 	}
-	pts.push(p2);
+	pts.push(curve.p2);
 	return pts;
 }
 
 // these approximations from https://raphlinus.github.io/graphics/curves/2019/12/23/flatten-quadbez.html
 const subdivideIntegralApprox = (x: number) =>
 	x / (0.33 + Math.sqrt(Math.hypot(0.4489, 0.5 * x)));
-const subdivideIntegralInvApprox = (x: number) =>
+export const internalSubdivideIntegralInvApprox = (x: number) =>
 	x * (0.61 + Math.hypot(0.39, 0.5 * x));
 
 export const bezier2SVG = (

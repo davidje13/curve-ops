@@ -25,6 +25,7 @@ import {
 	ptCross,
 	ptDist,
 	ptDist2,
+	ptDot,
 	ptLen,
 	ptLen2,
 	ptLerp,
@@ -42,6 +43,8 @@ import {
 	bezier2At,
 	bezier2FromPolylinePtsLeastSquares,
 	bezier2FromPolylinePtsLeastSquaresFixEnds,
+	internalBezier2SubdivisionCount,
+	internalSubdivideIntegralInvApprox,
 	type QuadraticBezier,
 } from './QuadraticBezier.mts';
 
@@ -565,45 +568,133 @@ export function bezier3Split(
 	return r;
 }
 
-export function bezier3SubdivideBezier2(
+function internalBezier3SubdivideBezier2(
 	{ p0, c1, c2, p3 }: CubicBezier,
 	maxError: number,
 	maxDivisions = 1000,
-): QuadraticBezier[] {
+): { t: number; c: QuadraticBezier }[] {
 	const f1 = ptMul(ptSub(c1, p0), 3);
 	const f2 = ptMul(ptMad(c1, -2, ptAdd(p0, c2)), 3);
 	const f3 = ptMad(ptSub(c1, c2), 3, ptSub(p3, p0));
 
+	let tA = 0;
 	let pA = p0;
 	let dA = f1;
 
-	const curves: QuadraticBezier[] = [];
+	const parts: { t: number; c: QuadraticBezier }[] = [];
 	const lenPolygon = ptDist(p0, c1) + ptDist(c1, c2) + ptDist(c2, p3);
-	const n = Math.min(
+	const n =
 		// TODO: better way to pick division count which uses maxError properly
-		Math.max(Math.ceil(Math.sqrt(Math.sqrt(lenPolygon / maxError))), 2),
-		maxDivisions,
-	);
-	for (let i = 1; i <= n; ++i) {
-		const tB = i / n; // TODO: better distribution
-		const pB = ptMad(ptMad(ptMad(f3, tB, f2), tB, f1), tB, p0);
+		Math.max(
+			Math.ceil(
+				Math.min(Math.sqrt(Math.sqrt(lenPolygon / maxError)), maxDivisions),
+			),
+			2,
+		);
+	function addDivision(tB: number, maxRecur: number) {
 		const dB = ptMad(ptMad(f3, 3 * tB, ptMul(f2, 2)), tB, f1);
+		if (ptDot(dB, dA) < 0 && maxRecur > 0) {
+			addDivision((tA + tB) * 0.5, maxRecur - 1);
+			addDivision(tB, maxRecur - 1);
+			return;
+		}
+		const pB = ptMad(ptMad(ptMad(f3, tB, f2), tB, f1), tB, p0);
 		const den = ptCross(dA, dB);
 		const chord = ptSub(pB, pA);
 		const l1 = ptCross(chord, dB);
 		const l2 = ptCross(chord, dA);
-		// TODO: improve avoidance of "spikes" around areas of high curvature
-		const l1n = l1 / den;
-		if (l2 * den < 0 && l1n > 0 && l1n * n < lenPolygon) {
-			curves.push({ p0: pA, c1: ptMad(dA, l1n, pA), p2: pB });
+		if (l2 * den < 0 && l1 * den > 0) {
+			parts.push({
+				t: tB,
+				c: { p0: pA, c1: ptMad(dA, l1 / den, pA), p2: pB },
+			});
+		} else if (maxRecur > 0) {
+			addDivision((tA + tB) * 0.5, 1);
+			addDivision(tB, 1);
+			return;
 		} else {
-			curves.push({ p0: pA, c1: ptMid(pA, pB), p2: pB });
+			parts.push({ t: tB, c: { p0: pA, c1: ptMid(pA, pB), p2: pB } });
 		}
+		tA = tB;
 		pA = pB;
 		dA = dB;
 	}
+	for (let i = 1; i <= n; ++i) {
+		addDivision(i / n, 5);
+	}
 
-	return curves;
+	return parts;
+}
+
+export const bezier3SubdivideBezier2 = (
+	curve: CubicBezier,
+	maxError: number,
+	maxDivisions = 1000,
+): QuadraticBezier[] =>
+	internalBezier3SubdivideBezier2(curve, maxError, maxDivisions).map(
+		({ c }) => c,
+	);
+
+export function bezier3Subdivide(
+	curve: CubicBezier,
+	maxError: number,
+	maxDivisions = 1000,
+): readonly Pt[] {
+	const parts = internalBezier3SubdivideBezier2(
+		curve,
+		maxError,
+		maxDivisions / 10,
+	);
+	let prevT = 0;
+	let sumN = 0;
+	const partInfo: {
+		n: number;
+		am: number;
+		a0: number;
+		tm: number;
+		t0: number;
+	}[] = [];
+	for (const part of parts) {
+		const { a0, a2, n } = internalBezier2SubdivisionCount(part.c, maxError);
+		const x0 = internalSubdivideIntegralInvApprox(a0);
+		const x2 = internalSubdivideIntegralInvApprox(a2);
+		const am = (a2 - a0) / n;
+		const tm = (part.t - prevT) / (x2 - x0);
+		partInfo.push({
+			n: sumN,
+			am,
+			a0: a0 - sumN * am,
+			tm,
+			t0: prevT - x0 * tm,
+		});
+		sumN += n;
+		prevT = part.t;
+	}
+	const { p0, c1, c2, p3 } = curve;
+	const N = Math.ceil(Math.min(sumN, maxDivisions));
+	if (N <= 2) {
+		return [p0, p3];
+	}
+	const pts: Pt[] = [p0];
+	const f1 = ptMul(ptSub(c1, p0), 3);
+	const f2 = ptMul(ptMad(c1, -2, ptAdd(p0, c2)), 3);
+	const f3 = ptMad(ptSub(c1, c2), 3, ptSub(p3, p0));
+
+	const nm = sumN / N;
+	let p = 0;
+	for (let i = 1; i < N; i++) {
+		const n = i * nm;
+		while (n > (partInfo[p + 1]?.n ?? Number.POSITIVE_INFINITY)) {
+			++p;
+		}
+		const info = partInfo[p]!;
+		const t =
+			internalSubdivideIntegralInvApprox(n * info.am + info.a0) * info.tm +
+			info.t0;
+		pts.push(ptMad(ptMad(ptMad(f3, t, f2), t, f1), t, p0));
+	}
+	pts.push(p3);
+	return pts;
 }
 
 export const bezier3SVG = (

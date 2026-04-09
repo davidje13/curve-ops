@@ -1,5 +1,5 @@
 import {
-	type Pt,
+	type Point2D,
 	bezier2FromPolylinePtsLeastSquaresFixEnds,
 	bezier3FromPolylinePtsLeastSquaresFixEnds,
 	bezierFromBezier2,
@@ -36,7 +36,7 @@ document.body.append(
 		const lineStart = { x: 0.2, y: 0.5 };
 		const lineEnd = { x: 0.8, y: 0.5 };
 		const controlCount = 8;
-		const pts: Pt[] = [];
+		const pts: Point2D[] = [];
 		const pprev = addHandle('prev', { x: 0.1, y: 0.4 });
 		pts.push(addHandle('end', lineStart));
 		for (let i = 0; i < controlCount; ++i) {

@@ -1,4 +1,4 @@
-import { PT0, ptDist, type Pt } from './Pt.mts';
+import { PT00, ptDist, type Point2D } from './Point2D.mts';
 import {
 	bezier2At,
 	bezier2FromPts,
@@ -22,25 +22,25 @@ describe('bezier2LengthEstimate', () => {
 	});
 
 	it('works with edge cases', () => {
-		const PT1 = { x: 1, y: 0 };
-		checkCurveLength(bezier2FromPts(PT0, PT0, PT0), 0);
-		checkCurveLength(bezier2FromPts(PT0, PT0, PT1), 1);
-		checkCurveLength(bezier2FromPts(PT0, PT1, PT1), 1);
-		checkCurveLength(bezier2FromPts(PT0, { x: 0.5, y: 0 }, PT1), 1);
+		const PT10 = { x: 1, y: 0 };
+		checkCurveLength(bezier2FromPts(PT00, PT00, PT00), 0);
+		checkCurveLength(bezier2FromPts(PT00, PT00, PT10), 1);
+		checkCurveLength(bezier2FromPts(PT00, PT10, PT10), 1);
+		checkCurveLength(bezier2FromPts(PT00, { x: 0.5, y: 0 }, PT10), 1);
 	});
 
 	it('is accurate near edge cases', () => {
-		const PT1 = { x: 1, y: 0 };
+		const PT10 = { x: 1, y: 0 };
 		for (let i = 1; i < 100; ++i) {
 			const d = Number.EPSILON * Math.pow(1.34, i);
-			checkCurveLength(bezier2FromPts(PT0, { x: d, y: 0 }, PT1), 1);
-			checkCurveLength(bezier2FromPts(PT0, { x: 0, y: d }, PT1));
-			checkCurveLength(bezier2FromPts(PT0, { x: d, y: d }, PT1));
-			checkCurveLength(bezier2FromPts(PT0, { x: 1 - d, y: 0 }, PT1), 1);
-			checkCurveLength(bezier2FromPts(PT0, { x: 0.5 + d, y: 0 }, PT1), 1);
-			checkCurveLength(bezier2FromPts(PT0, PT0, { x: d, y: 0 }), d);
-			checkCurveLength(bezier2FromPts(PT0, { x: d, y: 0 }, { x: d, y: 0 }), d);
-			checkCurveLength(bezier2FromPts(PT0, { x: 0, y: 1 }, { x: d, y: 0 }));
+			checkCurveLength(bezier2FromPts(PT00, { x: d, y: 0 }, PT10), 1);
+			checkCurveLength(bezier2FromPts(PT00, { x: 0, y: d }, PT10));
+			checkCurveLength(bezier2FromPts(PT00, { x: d, y: d }, PT10));
+			checkCurveLength(bezier2FromPts(PT00, { x: 1 - d, y: 0 }, PT10), 1);
+			checkCurveLength(bezier2FromPts(PT00, { x: 0.5 + d, y: 0 }, PT10), 1);
+			checkCurveLength(bezier2FromPts(PT00, PT00, { x: d, y: 0 }), d);
+			checkCurveLength(bezier2FromPts(PT00, { x: d, y: 0 }, { x: d, y: 0 }), d);
+			checkCurveLength(bezier2FromPts(PT00, { x: 0, y: 1 }, { x: d, y: 0 }));
 		}
 	});
 });
@@ -74,7 +74,7 @@ const randomPt = (range = 1) => ({
 });
 
 function measureFunction(
-	f: (t: number) => Pt,
+	f: (t: number) => Point2D,
 	start: number,
 	end: number,
 	steps: number,

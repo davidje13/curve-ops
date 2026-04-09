@@ -1,17 +1,17 @@
-import { PT0, type Pt } from '../index.mts';
+import { PT00, type Point2D } from '../index.mts';
 import { DragHandler, type MovementHandler } from './DragHandler.mts';
 
 export function grabbable(
 	o: HTMLElement,
 	update: () => void,
-	initial: Pt = PT0,
-): Pt {
+	initial: Point2D = PT00,
+): Point2D {
 	const r = { ...initial };
 	const draw = () => {
 		o.style.left = `${r.x * 100}%`;
 		o.style.top = `${r.y * 100}%`;
 	};
-	const move = (p: Pt) => {
+	const move = (p: Point2D) => {
 		r.x = p.x;
 		r.y = p.y;
 		draw();
@@ -180,8 +180,8 @@ interface InteractiveScope {
 		className: string,
 		d?: string | null | (() => string | null),
 	): SVGPathElement;
-	addHandle(className: string, initial: Pt): Pt;
-	addDragHandler(begin: (pt: Pt) => MovementHandler | null): void;
+	addHandle(className: string, initial: Point2D): Point2D;
+	addDragHandler(begin: (pt: Point2D) => MovementHandler | null): void;
 	addUpdateFn(fn: () => void): void;
 	computed<T>(fn: () => T): { current: T };
 	update(): void;

@@ -1,23 +1,28 @@
 export {
-	AABOX0,
-	type AxisAlignedBox,
-	aaBoxArea,
-	aaBoxContains,
-	aaBoxFromXY,
-	aaBoxGrow,
-	aaBoxMidpoint,
-	aaBoxSVG,
-} from './math/geometry/2d/AxisAlignedBox.mts';
+	AABOX00,
+	type AxisAlignedBox2D,
+	aaBox2Area,
+	aaBox2Contains,
+	aaBox2FromXY,
+	aaBox2Grow,
+	aaBox2Midpoint,
+	aaBox2SVG,
+} from './math/geometry/2d/AxisAlignedBox2D.mts';
 
 export { bezierSVG } from './math/geometry/2d/bezierConversion.mts';
 
 export {
 	type Circle,
+	ballFromCircle,
 	circleArea,
 	circleBounds,
 	circleCircumference,
 	circleContains,
+	circleFromBall,
 	circleSVG,
+	intersectCircleCircle,
+	intersectLine2Circle,
+	intersectLineSeg2Circle,
 } from './math/geometry/2d/Circle.mts';
 
 export {
@@ -67,42 +72,48 @@ export {
 	cutBezier3Rect,
 	intersectBezier3Circle,
 	intersectBezier3CircleFn,
-	intersectBezier3Line,
+	intersectBezier3LineSeg2,
 	intersectBezier3Rect,
 	intersectNBezier3Circle,
 	intersectNBezier3CircleFn,
-	isOverlapAABox,
-	isOverlapAABoxCircle,
-	isOverlapAABoxCircleR2,
+	isOverlapAABox2,
+	isOverlapAABox2Circle,
+	isOverlapAABox2CircleR2,
 } from './math/geometry/2d/intersection.mts';
 
 export {
-	type LineSegment,
-	bezierFromLine,
-	intersectLineLine,
-	lineAt,
-	lineBisect,
-	lineBounds,
-	lineDerivative,
-	lineFromBezier,
-	lineFromPts,
-	lineLength,
-	lineMidpoint,
-	lineNormal,
-	lineOpenArea,
-	lineSVG,
-	linePolynomialX,
-	linePolynomialY,
-	lineScale,
-	lineSplit,
-	lineTangent,
-	lineTransform,
-	lineTranslate,
-	lineTsAtXEq,
-	lineTsAtYEq,
-	lineXAt,
-	lineYAt,
-} from './math/geometry/2d/LineSegment.mts';
+	type Line2D,
+	bezierFromLine2,
+	intersectLine2Line2,
+	line2At,
+	line2Bounds,
+	line2Derivative,
+	line2FromBezier,
+	line2FromPts,
+	line2Normal,
+	line2PolynomialX,
+	line2PolynomialY,
+	line2SVG,
+	line2Scale,
+	line2TNearestPt,
+	line2Tangent,
+	line2Transform,
+	line2Translate,
+	line2TsAtXEq,
+	line2TsAtYEq,
+	line2XAt,
+	line2YAt,
+} from './math/geometry/2d/Line2D.mts';
+
+export {
+	intersectLineSeg2LineSeg2,
+	lineSeg2Bisect,
+	lineSeg2Length,
+	lineSeg2Midpoint,
+	lineSeg2OpenArea,
+	lineSeg2Split,
+	lineSeg2TNearestPt2,
+} from './math/geometry/2d/LineSegment2D.mts';
 
 export {
 	type NormalisedCubicBezier,
@@ -124,7 +135,7 @@ export {
 } from './math/geometry/2d/Polygon.mts';
 
 export {
-	type PtWithDist,
+	type PointWithDist2D,
 	type Polyline2D,
 	polyline2DFromPolyline,
 	polyline2DFromPts,
@@ -134,8 +145,8 @@ export {
 } from './math/geometry/2d/Polyline2D.mts';
 
 export {
-	PT0,
-	type Pt,
+	PT00,
+	type Point2D,
 	matFromPts,
 	ptAdd,
 	ptAngle,
@@ -159,7 +170,7 @@ export {
 	ptTransform,
 	ptsFromMat,
 	vecFromPt,
-} from './math/geometry/2d/Pt.mts';
+} from './math/geometry/2d/Point2D.mts';
 
 export {
 	type QuadraticBezier,
@@ -203,10 +214,76 @@ export {
 	rectArea,
 	rectBounds,
 	rectContains,
-	rectFromAABox,
-	rectFromLine,
+	rectFromAABox2,
+	rectFromLineSeg2,
 	rectSVG,
 } from './math/geometry/2d/Rectangle.mts';
+
+export {
+	AABOX000,
+	type AxisAlignedBox3D,
+	aaBox3Contains,
+	aaBox3FromXYZ,
+	aaBox3Grow,
+	aaBox3Midpoint,
+	aaBox3Volume,
+} from './math/geometry/3d/AxisAlignedBox3D.mts';
+
+export {
+	type Line3D,
+	bezierFromLine3,
+	line3At,
+	line3Derivative,
+	line3FromBezier,
+	line3FromLine,
+	line3FromPt3s,
+	line3PolynomialX,
+	line3PolynomialY,
+	line3PolynomialZ,
+	line3Scale,
+	line3TNearestPt3,
+	line3Tangent,
+	line3Translate,
+	line3TsAtXEq,
+	line3TsAtYEq,
+	line3TsAtZEq,
+	line3XAt,
+	line3YAt,
+	line3ZAt,
+	lineFromLine3,
+} from './math/geometry/3d/Line3D.mts';
+
+export {
+	lineSeg3Bisect,
+	lineSeg3Length,
+	lineSeg3Midpoint,
+	lineSeg3Split,
+	lineSeg3TNearestPt3,
+} from './math/geometry/3d/LineSegment3D.mts';
+
+export {
+	PT000,
+	type Point3D,
+	matFromPt3s,
+	pt3Add,
+	pt3Angle,
+	pt3Cross,
+	pt3Dist,
+	pt3Dist2,
+	pt3Dot,
+	pt3FromVec,
+	pt3Len,
+	pt3Len2,
+	pt3Lerp,
+	pt3Mad,
+	pt3Mid,
+	pt3Mul,
+	pt3Norm,
+	pt3Reflect,
+	pt3Sub,
+	pt3sFromMat,
+	vecFromPt3,
+} from './math/geometry/3d/Point3D.mts';
 
 export { matProjectVec3 } from './math/geometry/3d/projection.mts';
 
@@ -215,6 +292,33 @@ export {
 	matFromRotationBetween,
 	matSkewSymmetricCrossProduct,
 } from './math/geometry/3d/rotation.mts';
+
+export {
+	type Sphere,
+	ballFromSphere,
+	intersectLine3Sphere,
+	intersectLineSeg3Sphere,
+	sphereArea,
+	sphereBounds,
+	sphereContains,
+	sphereFromBall,
+	sphereVolume,
+} from './math/geometry/3d/Sphere.mts';
+
+export {
+	type AxisAlignedBox,
+	aaBoxContains,
+	aaBoxGrow,
+	aaBoxMidpoint,
+} from './math/geometry/AxisAlignedBox.mts';
+
+export {
+	type Ball,
+	ballBounds,
+	ballContains,
+	intersectLineBall,
+	intersectLineSegBall,
+} from './math/geometry/Ball.mts';
 
 export {
 	type Bezier,
@@ -243,6 +347,26 @@ export {
 	bezierTranslate,
 	polynomialFromBezierValues,
 } from './math/geometry/Bezier.mts';
+
+export {
+	type Line,
+	bezierFromLine,
+	lineAt,
+	lineDerivative,
+	lineFromBezier,
+	lineFromVecs,
+	lineScale,
+	lineTNearestVec,
+	lineTranslate,
+} from './math/geometry/Line.mts';
+
+export {
+	lineSegBisect,
+	lineSegLength,
+	lineSegMidpoint,
+	lineSegSplit,
+	lineSegTNearestVec,
+} from './math/geometry/LineSegment.mts';
 
 export {
 	type Polyline,
@@ -323,6 +447,7 @@ export {
 	mat4Trace,
 	matAdd,
 	matAddColumnwise,
+	matAddScalar,
 	matBinaryOp,
 	matDeterminant,
 	matElementNorm,
@@ -423,6 +548,7 @@ export {
 	vec2Cross,
 	vec3Cross,
 	vecAdd,
+	vecAddScalar,
 	vecAngle,
 	vecArrayFromMat,
 	vecDist,

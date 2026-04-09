@@ -3,8 +3,8 @@ import {
 	bezier2Derivative,
 	bezier2FromBezier,
 	bezier2LengthEstimate,
-	lineAt,
-	lineDerivative,
+	line2At,
+	line2Derivative,
 	matMulABTranspose,
 	matReshape,
 	ptCross,
@@ -49,7 +49,7 @@ function measureQuadArclen7(
 	// Kurbo Copyright (c) 2018 Raph Levien, available as Apache-2.0 or MIT
 
 	const d1 = bezier2Derivative(curve);
-	const d2 = lineDerivative(d1);
+	const d2 = line2Derivative(d1);
 
 	const d = ptSub(curve.p2, curve.p0);
 	const lChord = ptLen(d);
@@ -77,7 +77,7 @@ function measureQuadArclen7(
 
 	let len = 0;
 	for (const [wi, xi] of GAUSS_LEGENDRE_COEFFS_7) {
-		len += wi * ptLen(lineAt(d1, 0.5 * xi + 0.5));
+		len += wi * ptLen(line2At(d1, 0.5 * xi + 0.5));
 	}
 	return len * 0.5;
 }

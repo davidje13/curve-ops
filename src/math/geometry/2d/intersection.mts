@@ -3,7 +3,7 @@ import {
 	polynomial4SignedRoots,
 	polynomial7SignedRoots,
 } from '../../Polynomial.mts';
-import type { AxisAlignedBox } from './AxisAlignedBox.mts';
+import type { AxisAlignedBox2D } from './AxisAlignedBox2D.mts';
 import { circleContains, type Circle } from './Circle.mts';
 import {
 	bezier3Bounds,
@@ -14,23 +14,23 @@ import {
 	bezier3XAt,
 	type CubicBezier,
 } from './CubicBezier.mts';
-import {
-	internalLineScaledNormalisation,
-	type LineSegment,
-} from './LineSegment.mts';
 import { bezier3Normalise } from './NormalisedCubicBezier.mts';
 import { rectContains, type Rectangle } from './Rectangle.mts';
-import { ptAdd, ptDot, ptLen2, type Pt } from './Pt.mts';
+import { ptAdd, ptDot, ptLen2, type Point2D } from './Point2D.mts';
+import { internalLineSeg2Normalisation } from './LineSegment2D.mts';
+import type { Line2D } from './Line2D.mts';
 
-export const isOverlapAABox = (a: AxisAlignedBox, b: AxisAlignedBox) =>
+export const isOverlapAABox2 = (a: AxisAlignedBox2D, b: AxisAlignedBox2D) =>
 	a.l.x < b.h.x && b.l.x < a.h.x && a.l.y < b.h.y && b.l.y < a.h.y;
 
-export const isOverlapAABoxCircle = (aaBox: AxisAlignedBox, { c, r }: Circle) =>
-	isOverlapAABoxCircleR2(aaBox, c, r * r);
+export const isOverlapAABox2Circle = (
+	aaBox: AxisAlignedBox2D,
+	{ c, r }: Circle,
+) => isOverlapAABox2CircleR2(aaBox, c, r * r);
 
-export function isOverlapAABoxCircleR2(
-	{ l, h }: AxisAlignedBox,
-	c: Pt,
+export function isOverlapAABox2CircleR2(
+	{ l, h }: AxisAlignedBox2D,
+	c: Point2D,
 	r2: number,
 ): boolean {
 	const dx = Math.max(0, l.x - c.x, c.x - h.x);
@@ -38,12 +38,12 @@ export function isOverlapAABoxCircleR2(
 	return dx * dx + dy * dy <= r2;
 }
 
-export function intersectBezier3Line(
+export function intersectBezier3LineSeg2(
 	{ p0, c1, c2, p3 }: CubicBezier,
-	line: LineSegment,
+	line: Line2D,
 ): { t1: number; t2: number }[] {
 	// thanks, https://pomax.github.io/bezierinfo/#intersections
-	const norm = internalLineScaledNormalisation(line);
+	const norm = internalLineSeg2Normalisation(line);
 	if (!norm) {
 		return [];
 	}
@@ -71,7 +71,7 @@ export function intersectBezier3Rect(
 	maxError?: number | undefined,
 ): { t1: number; d1: Sign }[] {
 	const { c, d, aspect } = rect;
-	const norm = internalLineScaledNormalisation({ p0: c, p1: ptAdd(c, d) });
+	const norm = internalLineSeg2Normalisation({ p0: c, p1: ptAdd(c, d) });
 	if (!norm) {
 		return [];
 	}
@@ -142,7 +142,7 @@ export const intersectBezier3Circle = (
 ) => intersectBezier3CircleFn(curve)(circle.c, circle.r * circle.r, maxError);
 
 export type CircleIntersectionFn = (
-	center: Pt,
+	center: Point2D,
 	rad2: number,
 	maxError?: number | undefined,
 ) => { t1: number; d1: Sign }[];
@@ -186,7 +186,7 @@ export function intersectNBezier3CircleFn(
 	const f3 = -4 * a + b;
 
 	return (center, rad2, maxError) => {
-		if (!isOverlapAABoxCircleR2(bounds, center, rad2)) {
+		if (!isOverlapAABox2CircleR2(bounds, center, rad2)) {
 			return [];
 		}
 		const c1c = ptDot(c1, center) * 6;

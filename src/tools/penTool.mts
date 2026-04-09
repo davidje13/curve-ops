@@ -7,12 +7,12 @@ import {
 	bezier3Normalise,
 	nBezier3Area,
 } from '../math/geometry/2d/NormalisedCubicBezier.mts';
-import { ptDist, type Pt } from '../math/geometry/2d/Pt.mts';
-import type { PtWithDist } from '../math/geometry/2d/Polyline2D.mts';
+import { ptDist, type Point2D } from '../math/geometry/2d/Point2D.mts';
+import type { PointWithDist2D } from '../math/geometry/2d/Polyline2D.mts';
 import { movementThrottle } from './movement.mts';
 
 export function penTool(
-	onBegin: (pt: Pt) => void,
+	onBegin: (pt: Point2D) => void,
 	onSegment: (curve: CubicBezier, points: number) => void,
 	onLive: (curve: CubicBezier) => void,
 	onDone: () => void,
@@ -25,8 +25,8 @@ export function penTool(
 	const minError2 = minError * minError;
 	const maxError2 = maxError * maxError;
 
-	const live: PtWithDist[] = [];
-	let prevControl: Pt | undefined;
+	const live: PointWithDist2D[] = [];
+	let prevControl: Point2D | undefined;
 	let best!: Fit;
 
 	return movementThrottle(
@@ -69,8 +69,8 @@ export function penTool(
 }
 
 function doFit(
-	points: readonly PtWithDist[],
-	prevControl: Pt | undefined,
+	points: readonly PointWithDist2D[],
+	prevControl: Point2D | undefined,
 ): Fit {
 	if (!points.length) {
 		throw new Error('nothing to fit');

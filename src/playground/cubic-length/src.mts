@@ -1,6 +1,6 @@
 import {
 	type CubicBezier,
-	type Pt,
+	type Point2D,
 	bezier3At,
 	bezier3FromPts,
 	bezier3LengthEstimate,
@@ -118,7 +118,7 @@ function guidedLengthEstimate(
 }
 
 function measureCubic(
-	f: (t: number) => Pt,
+	f: (t: number) => Point2D,
 	start: number,
 	end: number,
 	steps: number,

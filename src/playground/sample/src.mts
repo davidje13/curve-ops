@@ -1,5 +1,5 @@
 import {
-	aaBoxSVG,
+	aaBox2SVG,
 	bezier3Bounds,
 	bezier3FromPts,
 	bezier3SVG,
@@ -24,7 +24,7 @@ document.body.append(svg);
 const bbPath = document.createElementNS(SVGNS, 'path');
 bbPath.setAttribute('stroke', 'green');
 bbPath.setAttribute('fill', 'none');
-bbPath.setAttribute('d', aaBoxSVG(bounds));
+bbPath.setAttribute('d', aaBox2SVG(bounds));
 svg.append(bbPath);
 
 const curvePath = document.createElementNS(SVGNS, 'path');

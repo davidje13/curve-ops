@@ -16,12 +16,7 @@ import {
 	type Polynomial,
 } from '../../Polynomial.mts';
 import type { Bezier } from '../Bezier.mts';
-import { aaBoxFromXY, type AxisAlignedBox } from './AxisAlignedBox.mts';
-import {
-	internalLineScaledNormalisation,
-	lineAt,
-	type LineSegment,
-} from './LineSegment.mts';
+import { aaBox2FromXY, type AxisAlignedBox2D } from './AxisAlignedBox2D.mts';
 import type { Polyline2D } from './Polyline2D.mts';
 import {
 	matFromPts,
@@ -41,20 +36,22 @@ import {
 	ptsFromMat,
 	ptSub,
 	ptSVG,
-	type Pt,
-} from './Pt.mts';
+	type Point2D,
+} from './Point2D.mts';
+import { line2At, type Line2D } from './Line2D.mts';
+import { internalLineSeg2Normalisation } from './LineSegment2D.mts';
 
 export interface QuadraticBezier {
-	readonly p0: Pt;
-	readonly c1: Pt;
-	readonly p2: Pt;
+	readonly p0: Point2D;
+	readonly c1: Point2D;
+	readonly p2: Point2D;
 }
 
-export const bezier2FromPts = (p0: Pt, c1: Pt, p2: Pt): QuadraticBezier => ({
-	p0,
-	c1,
-	p2,
-});
+export const bezier2FromPts = (
+	p0: Point2D,
+	c1: Point2D,
+	p2: Point2D,
+): QuadraticBezier => ({ p0, c1, p2 });
 
 export const bezier2FromBezier = (curve: Bezier<3, 2>): QuadraticBezier =>
 	bezier2FromPts(...ptsFromMat(curve));
@@ -91,7 +88,7 @@ export function bezier2FromPolylinePtsLeastSquares(
 
 export function bezier2FromPolylinePtsLeastSquaresFixEnds(
 	points: Polyline2D,
-	prevControl: Pt | null | undefined,
+	prevControl: Point2D | null | undefined,
 ): QuadraticBezier | null {
 	if (!points.length) {
 		return null;
@@ -107,7 +104,7 @@ export function bezier2FromPolylinePtsLeastSquaresFixEnds(
 		const dN = ptSub(pN, p0);
 
 		const Tv: number[] = [];
-		const adjustedPoints: Pt[] = [];
+		const adjustedPoints: Point2D[] = [];
 		for (let i = 1; i < points.length - 1; ++i) {
 			const pt = points[i]!;
 			const t = (pt.d - dist0) * distM;
@@ -195,7 +192,7 @@ export const bezier2MInv = /*@__PURE__*/ matFrom([
 	[1, 1, 1],
 ]);
 
-export const bezier2FromLine = ({ p0, p1 }: LineSegment): QuadraticBezier => ({
+export const bezier2FromLine = ({ p0, p1 }: Line2D): QuadraticBezier => ({
 	p0: p0,
 	c1: ptMid(p0, p1),
 	p2: p1,
@@ -207,7 +204,7 @@ export const bezierFromBezier2 = ({
 	p2,
 }: QuadraticBezier): Bezier<3, 2> => matFromPts([p0, c1, p2]);
 
-export function bezier2At({ p0, c1, p2 }: QuadraticBezier, t: number): Pt {
+export function bezier2At({ p0, c1, p2 }: QuadraticBezier, t: number): Point2D {
 	const T = 1 - t;
 	return ptMad(ptMad(p0, T, ptMul(c1, 2 * t)), T, ptMul(p2, t * t));
 }
@@ -242,19 +239,15 @@ export const bezier2PolynomialY = ({
 }: QuadraticBezier): Polynomial<3> =>
 	polynomialFromBezier2Values(p0.y, c1.y, p2.y);
 
-export const bezier2Derivative = ({
-	p0,
-	c1,
-	p2,
-}: QuadraticBezier): LineSegment => ({
+export const bezier2Derivative = ({ p0, c1, p2 }: QuadraticBezier): Line2D => ({
 	p0: ptMul(ptSub(c1, p0), 2),
 	p1: ptMul(ptSub(p2, c1), 2),
 });
 
-export const bezier2TangentAt = (curve: QuadraticBezier, t: number): Pt =>
-	ptNorm(lineAt(bezier2Derivative(curve), t));
+export const bezier2TangentAt = (curve: QuadraticBezier, t: number): Point2D =>
+	ptNorm(line2At(bezier2Derivative(curve), t));
 
-export const bezier2NormalAt = (curve: QuadraticBezier, t: number): Pt =>
+export const bezier2NormalAt = (curve: QuadraticBezier, t: number): Point2D =>
 	ptRot90(bezier2TangentAt(curve, t));
 
 export const bezier2OpenArea = ({ p0, c1, p2 }: QuadraticBezier) =>
@@ -308,7 +301,7 @@ export function bezier2RMSDistance(
 
 export const bezier2Transform = (
 	{ p0, c1, p2 }: QuadraticBezier,
-	transform: (pt: Pt) => Pt,
+	transform: (pt: Point2D) => Point2D,
 ): QuadraticBezier => ({
 	p0: transform(p0),
 	c1: transform(c1),
@@ -327,7 +320,7 @@ export const bezier2Scale = (
 
 export const bezier2Translate = (
 	{ p0, c1, p2 }: QuadraticBezier,
-	shift: Pt,
+	shift: Point2D,
 ): QuadraticBezier => ({
 	p0: ptAdd(p0, shift),
 	c1: ptAdd(c1, shift),
@@ -346,8 +339,8 @@ export const bezier2XTurningPointTs = ({ p0, c1, p2 }: QuadraticBezier) =>
 export const bezier2YTurningPointTs = ({ p0, c1, p2 }: QuadraticBezier) =>
 	polynomial2Roots([c1.y - p0.y, p2.y - 2 * c1.y + p0.y]);
 
-export const bezier2Bounds = (curve: QuadraticBezier): AxisAlignedBox =>
-	aaBoxFromXY(
+export const bezier2Bounds = (curve: QuadraticBezier): AxisAlignedBox2D =>
+	aaBox2FromXY(
 		[
 			curve.p0.x,
 			curve.p2.x,
@@ -368,7 +361,10 @@ export function bezier2LengthEstimate(
 	curve: QuadraticBezier,
 	maxError = Number.POSITIVE_INFINITY,
 ): LengthEstimate {
-	const norm = internalLineScaledNormalisation({ p0: curve.p0, p1: curve.p2 });
+	const norm = internalLineSeg2Normalisation({
+		p0: curve.p0,
+		p1: curve.p2,
+	});
 	if (!norm) {
 		const best = ptDist(curve.p0, curve.c1);
 		return { best, maxError: best * Number.EPSILON };
@@ -515,7 +511,7 @@ export function bezier2Subdivide(
 	curve: QuadraticBezier,
 	maxError: number,
 	maxDivisions = 1000,
-): readonly Pt[] {
+): readonly Point2D[] {
 	// thanks, https://raphlinus.github.io/graphics/curves/2019/12/23/flatten-quadbez.html
 
 	const { a0, a2, n } = internalBezier2SubdivisionCount(curve, maxError);
@@ -525,7 +521,7 @@ export function bezier2Subdivide(
 	}
 	const x0 = internalSubdivideIntegralInvApprox(a0);
 	const x2 = internalSubdivideIntegralInvApprox(a2);
-	const pts: Pt[] = [curve.p0];
+	const pts: Point2D[] = [curve.p0];
 	const am = (a2 - a0) / N;
 	const tm = 1 / (x2 - x0);
 	const f2 = ptMul(

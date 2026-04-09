@@ -1,6 +1,6 @@
-import type { Pt } from './Pt.mts';
+import type { Point2D } from './Point2D.mts';
 
-export type Polygon = readonly Pt[];
+export type Polygon = readonly Point2D[];
 
 export function polygonSignedArea(shape: Polygon): number {
 	if (shape.length < 3) {
@@ -17,7 +17,7 @@ export function polygonSignedArea(shape: Polygon): number {
 	return sum * 0.5;
 }
 
-export function polygonContains(shape: Polygon, { x, y }: Pt) {
+export function polygonContains(shape: Polygon, { x, y }: Point2D) {
 	let winding2 = 0;
 	let prev = shape[shape.length - 1]!;
 	for (const pt of shape) {

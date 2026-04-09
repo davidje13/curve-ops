@@ -1,7 +1,7 @@
-import type { Pt } from '../index.mts';
+import type { Point2D } from '../index.mts';
 
 export interface MovementHandler {
-	move: (pt: Pt, end: boolean) => void;
+	move: (pt: Point2D, end: boolean) => void;
 	cancel?: () => void;
 }
 
@@ -13,7 +13,7 @@ export class DragHandler {
 		private readonly pointRegion: HTMLElement | SVGElement,
 		private readonly w: number,
 		private readonly h: number,
-		private readonly onBegin: (pt: Pt) => MovementHandler | null,
+		private readonly onBegin: (pt: Point2D) => MovementHandler | null,
 	) {}
 
 	detach() {

@@ -16,8 +16,7 @@ import {
 	type Polynomial,
 } from '../../Polynomial.mts';
 import type { Bezier } from '../Bezier.mts';
-import { aaBoxFromXY, type AxisAlignedBox } from './AxisAlignedBox.mts';
-import type { LineSegment } from './LineSegment.mts';
+import { aaBox2FromXY, type AxisAlignedBox2D } from './AxisAlignedBox2D.mts';
 import type { Polyline2D } from './Polyline2D.mts';
 import {
 	matFromPts,
@@ -37,8 +36,8 @@ import {
 	ptsFromMat,
 	ptSub,
 	ptSVG,
-	type Pt,
-} from './Pt.mts';
+	type Point2D,
+} from './Point2D.mts';
 import {
 	bezier2At,
 	bezier2FromPolylinePtsLeastSquares,
@@ -47,19 +46,20 @@ import {
 	internalSubdivideIntegralInvApprox,
 	type QuadraticBezier,
 } from './QuadraticBezier.mts';
+import type { Line2D } from './Line2D.mts';
 
 export interface CubicBezier {
-	readonly p0: Pt;
-	readonly c1: Pt;
-	readonly c2: Pt;
-	readonly p3: Pt;
+	readonly p0: Point2D;
+	readonly c1: Point2D;
+	readonly c2: Point2D;
+	readonly p3: Point2D;
 }
 
 export const bezier3FromPts = (
-	p0: Pt,
-	c1: Pt,
-	c2: Pt,
-	p3: Pt,
+	p0: Point2D,
+	c1: Point2D,
+	c2: Point2D,
+	p3: Point2D,
 ): CubicBezier => ({ p0, c1, c2, p3 });
 
 export const bezier3FromBezier = (curve: Bezier<4, 2>): CubicBezier =>
@@ -99,7 +99,7 @@ export function bezier3FromPolylinePtsLeastSquares(
 
 export function bezier3FromPolylinePtsLeastSquaresFixEnds(
 	points: Polyline2D,
-	prevControl: Pt | null | undefined,
+	prevControl: Point2D | null | undefined,
 ): CubicBezier | null {
 	if (!points.length) {
 		return null;
@@ -115,7 +115,7 @@ export function bezier3FromPolylinePtsLeastSquaresFixEnds(
 		const dN = ptSub(pN, p0);
 
 		const Tv: [number, number][] = [];
-		const adjustedPoints: Pt[] = [];
+		const adjustedPoints: Point2D[] = [];
 		for (let i = 1; i < points.length - 1; ++i) {
 			const pt = points[i]!;
 			const t = (pt.d - dist0) * distM;
@@ -213,10 +213,10 @@ export const bezier3MInv = /*@__PURE__*/ matFrom([
 ]);
 
 export const bezier3FromQuad = (
-	p0: Pt,
-	c0: Pt,
-	c1: Pt,
-	p1: Pt,
+	p0: Point2D,
+	c0: Point2D,
+	c1: Point2D,
+	p1: Point2D,
 ): CubicBezier => ({
 	p0,
 	c1: ptLerp(c0, p1, 1 / 3),
@@ -235,7 +235,7 @@ export const bezier3FromBezier2 = ({
 	p3: p2,
 });
 
-export const bezier3FromLine = ({ p0, p1 }: LineSegment): CubicBezier => ({
+export const bezier3FromLine = ({ p0, p1 }: Line2D): CubicBezier => ({
 	p0: p0,
 	c1: ptLerp(p0, p1, 1 / 3),
 	c2: ptLerp(p0, p1, 2 / 3),
@@ -249,7 +249,7 @@ export const bezierFromBezier3 = ({
 	p3,
 }: CubicBezier): Bezier<4, 2> => matFromPts([p0, c1, c2, p3]);
 
-export function bezier3At({ p0, c1, c2, p3 }: CubicBezier, t: number): Pt {
+export function bezier3At({ p0, c1, c2, p3 }: CubicBezier, t: number): Point2D {
 	const T = 1 - t;
 	return ptMad(
 		ptMad(p0, T * T, ptMad(c1, 3 * t * T, ptMul(c2, 3 * t * t))),
@@ -307,10 +307,10 @@ export const bezier3Derivative = ({
 	p2: ptMul(ptSub(p3, c2), 3),
 });
 
-export const bezier3TangentAt = (curve: CubicBezier, t: number): Pt =>
+export const bezier3TangentAt = (curve: CubicBezier, t: number): Point2D =>
 	ptNorm(bezier2At(bezier3Derivative(curve), t));
 
-export const bezier3NormalAt = (curve: CubicBezier, t: number): Pt =>
+export const bezier3NormalAt = (curve: CubicBezier, t: number): Point2D =>
 	ptRot90(bezier3TangentAt(curve, t));
 
 export const bezier3OpenArea = (curve: CubicBezier) =>
@@ -371,7 +371,7 @@ export function bezier3RMSDistance(
 
 export const bezier3Transform = (
 	{ p0, c1, c2, p3 }: CubicBezier,
-	transform: (pt: Pt) => Pt,
+	transform: (pt: Point2D) => Point2D,
 ): CubicBezier => ({
 	p0: transform(p0),
 	c1: transform(c1),
@@ -392,7 +392,7 @@ export const bezier3Scale = (
 
 export const bezier3Translate = (
 	{ p0, c1, c2, p3 }: CubicBezier,
-	shift: Pt,
+	shift: Point2D,
 ): CubicBezier => ({
 	p0: ptAdd(p0, shift),
 	c1: ptAdd(c1, shift),
@@ -436,8 +436,8 @@ export function bezier3InflectionTs({ p0, c1, c2, p3 }: CubicBezier) {
 	]);
 }
 
-export const bezier3Bounds = (curve: CubicBezier): AxisAlignedBox =>
-	aaBoxFromXY(
+export const bezier3Bounds = (curve: CubicBezier): AxisAlignedBox2D =>
+	aaBox2FromXY(
 		[
 			curve.p0.x,
 			curve.p3.x,
@@ -639,7 +639,7 @@ export function bezier3Subdivide(
 	curve: CubicBezier,
 	maxError: number,
 	maxDivisions = 1000,
-): readonly Pt[] {
+): readonly Point2D[] {
 	const parts = internalBezier3SubdivideBezier2(
 		curve,
 		maxError,
@@ -675,7 +675,7 @@ export function bezier3Subdivide(
 	if (N <= 2) {
 		return [p0, p3];
 	}
-	const pts: Pt[] = [p0];
+	const pts: Point2D[] = [p0];
 	const f1 = ptMul(ptSub(c1, p0), 3);
 	const f2 = ptMul(ptMad(c1, -2, ptAdd(p0, c2)), 3);
 	const f3 = ptMad(ptSub(c1, c2), 3, ptSub(p3, p0));

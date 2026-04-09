@@ -1,19 +1,19 @@
 import type { Polyline } from '../Polyline.mts';
-import { ptCross, ptDist, ptSVG, type Pt } from './Pt.mts';
+import { ptCross, ptDist, ptSVG, type Point2D } from './Point2D.mts';
 
-export interface PtWithDist extends Pt {
+export interface PointWithDist2D extends Point2D {
 	readonly d: number;
 }
 
-export type Polyline2D = readonly PtWithDist[];
+export type Polyline2D = readonly PointWithDist2D[];
 
-export function polyline2DFromPts(points: readonly Pt[]): Polyline2D {
+export function polyline2DFromPts(points: readonly Point2D[]): Polyline2D {
 	if (!points.length) {
 		return [];
 	}
 	let distance = 0;
 	let prev = points[0]!;
-	const r: PtWithDist[] = [{ ...prev, d: 0 }];
+	const r: PointWithDist2D[] = [{ ...prev, d: 0 }];
 	for (let i = 1; i < points.length; ++i) {
 		const pt = points[i]!;
 		distance += ptDist(prev, pt);
@@ -23,7 +23,7 @@ export function polyline2DFromPts(points: readonly Pt[]): Polyline2D {
 	return r;
 }
 
-export function polyline2DOpenArea(points: readonly Pt[]): number {
+export function polyline2DOpenArea(points: readonly Point2D[]): number {
 	if (points.length < 2) {
 		return 0;
 	}
@@ -38,7 +38,7 @@ export function polyline2DOpenArea(points: readonly Pt[]): number {
 }
 
 export const polyline2DSVG = (
-	poly: readonly Pt[],
+	poly: readonly Point2D[],
 	precision?: number | undefined,
 	prefix = 'M',
 ) => prefix + poly.map((pt) => ptSVG(pt, precision)).join('L');

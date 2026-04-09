@@ -4,21 +4,21 @@ import {
 	cutBezier3Circle,
 	cutBezier3Rect,
 	intersectBezier3CircleFn,
-	isOverlapAABox,
-	isOverlapAABoxCircleR2,
+	isOverlapAABox2,
+	isOverlapAABox2CircleR2,
 	movementThrottle,
 	penTool,
 	polyline2DSVG,
 	ptDist2,
 	ptSVG,
 	rectBounds,
-	rectFromLine,
+	rectFromLineSeg2,
 	SingleLinkedList,
-	type AxisAlignedBox,
+	type AxisAlignedBox2D,
 	type Circle,
 	type CircleIntersectionFn,
 	type CubicBezier,
-	type Pt,
+	type Point2D,
 } from '../../index.mts';
 import {
 	makeInteractive,
@@ -34,7 +34,7 @@ interface BezierSegment {
 	_curve: CubicBezier;
 	_element: SVGElement;
 	_circFn: CircleIntersectionFn | null;
-	_bounds: AxisAlignedBox;
+	_bounds: AxisAlignedBox2D;
 }
 
 document.body.append(
@@ -52,24 +52,24 @@ document.body.append(
 		const hold = addSVGElement(mkSVG('g'));
 
 		const eraserRad = 0.03;
-		function doErase(from: Pt, to: Pt) {
+		function doErase(from: Point2D, to: Point2D) {
 			const rr = eraserRad * eraserRad;
 			const endCap: Circle = { c: to, r: eraserRad };
 			const line =
 				ptDist2(from, to) > rr * 0.1 * 0.1
-					? rectFromLine({ p0: from, p1: to }, eraserRad * 2)
+					? rectFromLineSeg2({ p0: from, p1: to }, eraserRad * 2)
 					: null;
 			const lineBounds = line ? rectBounds(line) : null;
 
 			paths.forEach((seg, { replace }) => {
 				let parts = [seg._curve];
-				if (isOverlapAABoxCircleR2(seg._bounds, endCap.c, rr)) {
+				if (isOverlapAABox2CircleR2(seg._bounds, endCap.c, rr)) {
 					seg._circFn ??= intersectBezier3CircleFn(seg._curve);
 					parts = cutBezier3Circle(seg._curve, endCap, seg._circFn).filter(
 						(c) => !c.inside,
 					);
 				}
-				if (lineBounds && isOverlapAABox(seg._bounds, lineBounds)) {
+				if (lineBounds && isOverlapAABox2(seg._bounds, lineBounds)) {
 					parts = parts
 						.flatMap((c) => cutBezier3Rect(c, line!))
 						.filter((c) => !c.inside);
@@ -175,7 +175,7 @@ document.body.append(
 							mkSVG('path', { class: `done n${n}`, d: bezier3SVG(seg) }),
 							mkSVG('path', {
 								class: 'join',
-								d: 'M' + ptSVG(seg.p3) + 'h0.001',
+								d: 'M' + ptSVG(seg.p3) + 'v0.001',
 							}),
 						),
 					() => {},

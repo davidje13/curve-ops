@@ -165,6 +165,11 @@ export const matAdd = <M extends number, N extends number>(
 	b: Matrix<M, N>,
 ) => matBinaryOp(a, b, (a, b) => a + b, '+');
 
+export const matAddScalar = <M extends number, N extends number>(
+	a: Matrix<M, N>,
+	v: number,
+) => matUnaryOp(a, (a) => a + v);
+
 export function matAddColumnwise<M extends number, N extends number>(
 	{ v, m, n }: Matrix<M, N>,
 	b: Matrix<1, N>,

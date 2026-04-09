@@ -1,5 +1,5 @@
 import {
-	aaBoxSVG,
+	aaBox2SVG,
 	bezier3At,
 	bezier3FromPts,
 	bezier3SVG,
@@ -12,7 +12,7 @@ import {
 	intersectBezier3Circle,
 	intersectBezier3CircleFn,
 	intersectBezier3Rect,
-	lineFromPts,
+	line2FromPts,
 	ptDist,
 	ptMad,
 	ptMul,
@@ -20,7 +20,7 @@ import {
 	ptSVG,
 	rectBounds,
 	rectContains,
-	rectFromLine,
+	rectFromLineSeg2,
 	rectSVG,
 } from '../../index.mts';
 import { makeInteractive, mk } from '../dom.mts';
@@ -31,13 +31,13 @@ document.body.append(
 			const cc = addHandle('end', { x: 0.5, y: 0.3 });
 			const cd = addHandle('mid', { x: 0.5, y: 0.5 });
 			const circle = computed(() => ({ c: cc, r: ptDist(cd, cc) }));
-			addSVGPath('bounds', () => aaBoxSVG(circleBounds(circle.current)));
+			addSVGPath('bounds', () => aaBox2SVG(circleBounds(circle.current)));
 			addSVGPath('intersection-shape', () => circleSVG(circle.current));
 
 			const l0 = addHandle('end', { x: 0.3, y: 0.7 });
 			const l1 = addHandle('end', { x: 0.9, y: 0.5 });
-			const box = computed(() => rectFromLine(lineFromPts(l0, l1), 0.1));
-			addSVGPath('bounds', () => aaBoxSVG(rectBounds(box.current)));
+			const box = computed(() => rectFromLineSeg2(line2FromPts(l0, l1), 0.1));
+			addSVGPath('bounds', () => aaBox2SVG(rectBounds(box.current)));
 			addSVGPath('intersection-shape', () => rectSVG(box.current));
 
 			const ww = 100;
@@ -75,7 +75,7 @@ document.body.append(
 
 		const l0 = addHandle('end', { x: 0.3, y: 0.7 });
 		const l1 = addHandle('end', { x: 0.9, y: 0.5 });
-		const box = computed(() => rectFromLine(lineFromPts(l0, l1), 0.1));
+		const box = computed(() => rectFromLineSeg2(line2FromPts(l0, l1), 0.1));
 		addSVGPath('intersection-shape', () => rectSVG(box.current));
 
 		const p0 = addHandle('end', { x: 0.1, y: 0.1 });
@@ -117,7 +117,7 @@ document.body.append(
 
 		const l0 = addHandle('end', { x: 0.3, y: 0.7 });
 		const l1 = addHandle('end', { x: 0.9, y: 0.5 });
-		const box = computed(() => rectFromLine(lineFromPts(l0, l1), 0.1));
+		const box = computed(() => rectFromLineSeg2(line2FromPts(l0, l1), 0.1));
 		addSVGPath('intersection-shape', () => rectSVG(box.current));
 
 		const p0 = addHandle('end', { x: 0.1, y: 0.1 });

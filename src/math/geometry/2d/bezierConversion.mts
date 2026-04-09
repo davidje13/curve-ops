@@ -1,5 +1,5 @@
 import { bezierAtMulti, type Bezier } from '../Bezier.mts';
-import { ptsFromMat, ptSVG } from './Pt.mts';
+import { ptsFromMat, ptSVG } from './Point2D.mts';
 
 export function bezierSVG(
 	curve: Bezier<number, 2>,

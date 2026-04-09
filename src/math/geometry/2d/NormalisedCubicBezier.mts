@@ -1,7 +1,16 @@
 import { polynomial3Roots } from '../../Polynomial.mts';
 import type { CubicBezier } from './CubicBezier.mts';
-import { lineAt, internalLineScaledNormalisation } from './LineSegment.mts';
-import { PT0, ptCross, ptLen, ptMad, ptMul, ptSub, type Pt } from './Pt.mts';
+import { line2At } from './Line2D.mts';
+import { internalLineSeg2Normalisation } from './LineSegment2D.mts';
+import {
+	PT00,
+	ptCross,
+	ptLen,
+	ptMad,
+	ptMul,
+	ptSub,
+	type Point2D,
+} from './Point2D.mts';
 import {
 	bezier2At,
 	bezier2Derivative,
@@ -16,23 +25,23 @@ export interface NormalisedCubicBezier extends CubicBezier {
 export function bezier3Normalise({ p0, c1, c2, p3 }: CubicBezier): {
 	scale2: number;
 	curve: NormalisedCubicBezier;
-	fn: (pt: Pt) => Pt;
+	fn: (pt: Point2D) => Point2D;
 } {
 	const norm =
-		internalLineScaledNormalisation({ p0, p1: p3 }) ??
-		internalLineScaledNormalisation({ p0, p1: c1 }) ??
-		internalLineScaledNormalisation({ p0, p1: c2 });
+		internalLineSeg2Normalisation({ p0, p1: p3 }) ??
+		internalLineSeg2Normalisation({ p0, p1: c1 }) ??
+		internalLineSeg2Normalisation({ p0, p1: c2 });
 	if (!norm) {
 		return {
 			scale2: 1,
-			curve: { p0: PT0, c1: PT0, c2: PT0, p3: PT0 },
+			curve: { p0: PT00, c1: PT00, c2: PT00, p3: PT00 },
 			fn: (pt) => ptSub(pt, p0),
 		};
 	}
 	return {
 		...norm,
 		curve: {
-			p0: PT0,
+			p0: PT00,
 			c1: norm.fn(c1),
 			c2: norm.fn(c2),
 			p3: { x: norm.fn(p3).x, y: 0 },
@@ -43,7 +52,7 @@ export function bezier3Normalise({ p0, c1, c2, p3 }: CubicBezier): {
 export function nBezier3At(
 	{ c1, c2, p3 }: NormalisedCubicBezier,
 	t: number,
-): Pt {
+): Point2D {
 	const T = 1 - t;
 	return ptMad(
 		ptMad(c1, 3 * t * T, ptMul(c2, 3 * t * t)),
@@ -86,7 +95,7 @@ export function nBezier3Curvature(
 	const d2f = bezier2Derivative(d1f);
 	return (t) => {
 		const d1 = bezier2At(d1f, t);
-		const d2 = lineAt(d2f, t);
+		const d2 = line2At(d2f, t);
 		const len = ptLen(d1);
 		return ptCross(d1, d2) / (len * len * len);
 	};

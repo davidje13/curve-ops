@@ -2,6 +2,7 @@ import type { SizedArrayWithLength, SizeOf } from '../util/SizedArray.mts';
 import {
 	internalMatFromFlat,
 	matAdd,
+	matAddScalar,
 	matLerp,
 	matMid,
 	matScale,
@@ -104,6 +105,11 @@ export const vecAdd: <N extends number>(
 	a: Vector<N>,
 	b: Vector<N>,
 ) => Vector<N> = matAdd;
+
+export const vecAddScalar: <N extends number>(
+	a: Vector<N>,
+	b: number,
+) => Vector<N> = matAddScalar;
 
 export const vecMul: <N extends number>(a: Vector<N>, b: number) => Vector<N> =
 	matScale;

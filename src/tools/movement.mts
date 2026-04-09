@@ -1,15 +1,15 @@
-import { ptDist2, type Pt } from '../index.mts';
+import { ptDist2, type Point2D } from '../math/geometry/2d/Point2D.mts';
 
 export function movementThrottle(
-	onBegin: ((pt: Pt) => void) | null | undefined,
-	onMove: (from: Pt, to: Pt, done: boolean) => void,
+	onBegin: ((pt: Point2D) => void) | null | undefined,
+	onMove: (from: Point2D, to: Point2D, done: boolean) => void,
 	onCancel: (() => void) | null | undefined,
 	movementThreshold: number,
 	throttleTime = -1,
 ) {
 	const tDD = movementThreshold * movementThreshold;
 	const allowThrottle = throttleTime >= 0;
-	return (pt0: Pt) => {
+	return (pt0: Point2D) => {
 		if (onBegin) {
 			onBegin(pt0);
 		} else {
@@ -24,7 +24,7 @@ export function movementThrottle(
 			prev = latest;
 		};
 		return {
-			move: (pt: Pt, done = false) => {
+			move: (pt: Point2D, done = false) => {
 				const dd = ptDist2(prev, pt);
 				if (dd > tDD || done) {
 					if (tm) {

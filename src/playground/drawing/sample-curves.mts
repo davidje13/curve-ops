@@ -7,10 +7,10 @@ import {
 	fresnelSIntegral,
 	ptFromVec,
 	vecFrom,
-	type Pt,
+	type Point2D,
 } from '../../index.mts';
 
-export const pointsOptions: { name: string; points: Pt[] }[] = [
+export const pointsOptions: { name: string; points: Point2D[] }[] = [
 	{
 		name: 'circle',
 		points: ptFn((t) => ({
@@ -187,8 +187,8 @@ export const pointsOptions: { name: string; points: Pt[] }[] = [
 	},
 ];
 
-function ptFn(fn: (t: number) => Pt, n = 100000): Pt[] {
-	const r: Pt[] = [];
+function ptFn(fn: (t: number) => Point2D, n = 100000): Point2D[] {
+	const r: Point2D[] = [];
 	for (let i = 0; i < n; ++i) {
 		r.push(fn(i / n));
 	}

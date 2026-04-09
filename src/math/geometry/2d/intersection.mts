@@ -16,7 +16,7 @@ import {
 } from './CubicBezier.mts';
 import { bezier3Normalise } from './NormalisedCubicBezier.mts';
 import { rectContains, type Rectangle } from './Rectangle.mts';
-import { ptAdd, ptDot, ptLen2, type Point2D } from './Point2D.mts';
+import { ptAdd, ptDot, ptLen2, ptMid, type Point2D } from './Point2D.mts';
 import { internalLineSeg2Normalisation } from './LineSegment2D.mts';
 import type { Line2D } from './Line2D.mts';
 
@@ -104,9 +104,15 @@ export function intersectBezier3Rect(
 	}
 	const r: { t1: number; d1: Sign }[] = [];
 	let prevT = -1;
-	let inX = curve.p0.x > -0.5 && curve.p0.x < 0.5;
-	let inY = curve.p0.y > -ry && curve.p0.y < ry;
-	for (const { t1, d1, y } of crossings.sort((a, b) => a.t1 - b.t1)) {
+	const mid = ptMid(curve.p0, curve.p3);
+	crossings.sort((a, b) => a.t1 - b.t1);
+	const firstXCrossing = crossings.find((c) => !c.y);
+	let inX = firstXCrossing
+		? firstXCrossing.d1 > 0
+		: mid.x > -0.5 && mid.x < 0.5;
+	const firstYCrossing = crossings.find((c) => c.y);
+	let inY = firstYCrossing ? firstYCrossing.d1 > 0 : mid.y > -ry && mid.y < ry;
+	for (const { t1, d1, y } of crossings) {
 		const newIn = d1 < 0;
 		if (y) {
 			if (newIn === inY) {

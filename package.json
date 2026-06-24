@@ -48,6 +48,6 @@
 		"rollup": "4.x",
 		"rollup-plugin-dts": "6.x",
 		"typescript": "5.9.x",
-		"web-listener": "0.20.1"
+		"web-listener": "1.1.x"
 	}
 }
